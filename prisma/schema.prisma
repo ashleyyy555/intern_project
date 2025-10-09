@@ -74,44 +74,44 @@ model SewingOperation {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
   operationType String // e.g., "cutting", "sewing", "finishing"
-  quantityForC1 Int
-  quantityForC2 Int
-  quantityForC3 Int
-  quantityForC4 Int
-  quantityForC5 Int
-  quantityForC6 Int
-  quantityForC7 Int     
-  quantityForC8 Int
-  quantityForC9 Int
-  quantityForC10 Int
-  quantityForC11 Int
-  quantityForC12 Int
-  quantityForS1 Int
-  quantityForS2 Int
-  quantityForS3 Int
-  quantityForS4 Int
-  quantityForS5 Int
-  quantityForS6 Int
-  quantityForS7 Int
-  quantityForS8 Int
-  quantityForS9 Int
-  quantityForS10 Int
-  quantityForS11 Int
-  quantityForS12 Int
-  quantityForS13 Int
-  quantityForS14 Int
-  quantityForS15 Int
-  quantityForS16 Int
-  quantityForS17 Int
-  quantityForS18 Int
-  quantityForS19 Int
-  quantityForS20 Int
-  quantityForS21 Int
-  quantityForS22 Int
-  quantityForS23 Int
-  quantityForS24 Int
-  quantityForST1 Int
-  quantityForST2 Int
+  quantityForC1 Int?
+  quantityForC2 Int?
+  quantityForC3 Int?
+  quantityForC4 Int?
+  quantityForC5 Int?
+  quantityForC6 Int?
+  quantityForC7 Int?    
+  quantityForC8 Int?
+  quantityForC9 Int?
+  quantityForC10 Int?
+  quantityForC11 Int?
+  quantityForC12 Int?
+  quantityForS1 Int?
+  quantityForS2 Int?
+  quantityForS3 Int?
+  quantityForS4 Int?
+  quantityForS5 Int?
+  quantityForS6 Int?
+  quantityForS7 Int?
+  quantityForS8 Int?
+  quantityForS9 Int?
+  quantityForS10 Int?
+  quantityForS11 Int?
+  quantityForS12 Int?
+  quantityForS13 Int?
+  quantityForS14 Int?
+  quantityForS15 Int?
+  quantityForS16 Int?
+  quantityForS17 Int?
+  quantityForS18 Int?
+  quantityForS19 Int?
+  quantityForS20 Int?
+  quantityForS21 Int?
+  quantityForS22 Int?
+  quantityForS23 Int?
+  quantityForS24 Int?
+  quantityForST1 Int?
+  quantityForST2 Int?
   
 }
 
@@ -139,4 +139,44 @@ model PackingOperation {
 }
 
 
+model OperationTime {
+  id String @id @default(cuid())
+  SectionType String // e.g., "cutting", "sewing", "finishing"
+  workerId Int
+  year Int
+  month Int
+  OperationTimeD1 Int?
+  OperationTimeD2 Int?
+  OperationTimeD3 Int?
+  OperationTimeD4 Int?
+  OperationTimeD5 Int?
+  OperationTimeD6 Int?
+  OperationTimeD7 Int?
+  OperationTimeD8 Int?
+  OperationTimeD9 Int?
+  OperationTimeD10 Int?
+  OperationTimeD11 Int?
+  OperationTimeD12 Int?
+  OperationTimeD13 Int?
+  OperationTimeD14 Int?
+  OperationTimeD15 Int?
+  OperationTimeD16 Int?
+  OperationTimeD17 Int?
+  OperationTimeD18 Int?
+  OperationTimeD19 Int?
+  OperationTimeD20 Int?
+  OperationTimeD21 Int?
+  OperationTimeD22 Int?
+  OperationTimeD23 Int?
+  OperationTimeD24 Int?
+  OperationTimeD25 Int?
+  OperationTimeD26 Int?
+  OperationTimeD27 Int?
+  OperationTimeD28 Int?
+  OperationTimeD29 Int?
+  OperationTimeD30 Int?
+  OperationTimeD31 Int?
+  
+
+}
 
