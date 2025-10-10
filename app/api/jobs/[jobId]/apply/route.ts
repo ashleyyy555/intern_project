@@ -2,7 +2,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(
+export const runtime = "nodejs";
+
+
+/* export async function POST(
   request: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
@@ -45,4 +48,4 @@ export async function POST(
   } catch (error) {
     return new NextResponse("Internal server error", { status: 500 });
   }
-}
+} */

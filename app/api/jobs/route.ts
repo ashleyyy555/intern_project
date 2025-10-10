@@ -2,7 +2,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export const runtime = "nodejs";
+
+
+/* export async function POST(request: Request) {
   const session = await auth();
 
   if (!session?.user || !session.user.id) {
@@ -24,4 +27,4 @@ export async function POST(request: Request) {
     console.error("Error creating job: ", error);
     return new NextResponse("Internal server error", { status: 500 });
   }
-}
+} */

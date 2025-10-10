@@ -4,7 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ApplyButton from "./ApplyButton";
 
-export default async function JobPage({
+export const runtime = "nodejs";
+
+
+/* export default async function JobPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -67,4 +70,4 @@ export default async function JobPage({
       </div>
     </div>
   );
-}
+} */

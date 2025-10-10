@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  // output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -49,11 +49,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model User {
+model User { //prisma.user?? >> npx prisma generate
   id String @id @default(cuid())
   name String?
   email String? @unique
   emailVerified DateTime?
+
+  username      String?  @unique
+  passwordHash  String?
+
   accounts Account[]
   sessions Session[]
 

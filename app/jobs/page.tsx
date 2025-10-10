@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
-export default async function JobsPage({
+export const runtime = "nodejs";
+
+
+/* export default async function JobsPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -112,4 +115,4 @@ export default async function JobsPage({
       </div>
     </div>
   );
-}
+} */

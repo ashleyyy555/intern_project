@@ -1,8 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const runtime = "nodejs";
+
+
 export default async function Home() {
-  const recentJobs = await prisma.job.findMany({
+
+  return (
+    <main className="p-6">
+      <h1 className="text-2xl font-semibold">Welcome</h1>
+      {/* <pre>{JSON.stringify(recentOps, null, 2)}</pre> */}
+    </main>
+  );
+
+  /* const recentJobs = await prisma.job.findMany({
     take: 3,
     orderBy: {
       postedAt: "desc",
@@ -14,11 +25,11 @@ export default async function Home() {
         },
       },
     },
-  });
+  }); 
 
   return (
     <div className="space-y-12">
-      {/* Hero Section */}
+      {/* Hero Section 
       <section className="text-center py-20 bg-white rounded-lg shadow-sm">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
           Find Your Dream Job
@@ -34,7 +45,7 @@ export default async function Home() {
         </Link>
       </section>
 
-      {/* Recent Jobs Section */}
+      {/* Recent Jobs Section 
       <section>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Jobs</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -73,5 +84,5 @@ export default async function Home() {
         </div>
       </section>
     </div>
-  );
-}
+  ); */
+} 
