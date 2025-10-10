@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+//no use for now
 
 /* export async function POST(
   request: Request,

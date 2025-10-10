@@ -1,4 +1,5 @@
-// app/register/page.tsx
+// register page
+
 import { register } from "@/lib/auth";
 import Link from "next/link";
 

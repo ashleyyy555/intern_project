@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 import bcrypt from "bcryptjs";
 
-
+//register page
 
 export const runtime = "nodejs";
 
