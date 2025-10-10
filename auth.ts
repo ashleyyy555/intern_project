@@ -39,7 +39,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         if (!ok) return null;
 
         // Minimal safe user object → becomes `user` on first JWT pass
-        return { id: user.id, email: user.email, name: user.name ?? null };
+        return { id: user.id, name: user.name ?? null };
       },
     }),
   ],

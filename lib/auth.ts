@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { signIn } from "@/auth"; // from your NextAuth v5 `auth.ts`
 import { signOut } from "@/auth";
 
-
+// export const runtime = "nodejs";
 
 /**
  * Server Action: Sign in

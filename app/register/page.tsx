@@ -44,7 +44,7 @@ export default function RegisterPage({
               name="identifier"
               defaultValue={prefill}
               className="mt-1 w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="you@example.com or yourusername"
+              placeholder="your username"
               required
               autoComplete="username"
             />
