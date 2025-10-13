@@ -7,70 +7,54 @@ import bcrypt from "bcryptjs";
 import { signIn } from "@/auth"; // from your NextAuth v5 `auth.ts`
 import { signOut } from "@/auth";
 
-// export const runtime = "nodejs";
-
 /**
  * Server Action: Sign in
  * - If user not found → redirect to /register with identifier prefilled
  * - If found → call Auth.js credentials signIn
  */
 export async function login(formData: FormData) {
-  const identifier = String(formData.get("identifier") || "").trim();
+  const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
   const callbackUrl = String(formData.get("callbackUrl") || "/dashboard");
 
-  if (!identifier || !password) {
-    redirect(`/signin?error=Missing+credentials&identifier=${encodeURIComponent(identifier)}`);
+  if (!username || !password) {
+    redirect(`/signin?error=Missing+credentials&username=${encodeURIComponent(username)}`);
   }
 
-  // Find by email OR username
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: identifier }, { username: identifier }],
-    },
+  // (Optional) quick existence check; not required:
+  const exists = await prisma.user.findUnique({
+    where: { username },
     select: { id: true },
   });
-
-  if (!user) {
-    // Not registered → suggest register, keep identifier
-    redirect(`/register?identifier=${encodeURIComponent(identifier)}&from=signin`);
+  if (!exists) {
+    redirect(`/register?username=${encodeURIComponent(username)}&from=signin`);
   }
 
   try {
     await signIn("credentials", {
-      identifier,
+      username,            //must match the provider’s expected key
       password,
       redirectTo: callbackUrl,
     });
-    // signIn will redirect, but we keep a fallback:
-    redirect(callbackUrl);
-  } catch (err) {
-    redirect(`/signin?error=Invalid+credentials&identifier=${encodeURIComponent(identifier)}`);
+    redirect(callbackUrl); // safety fallback
+  } catch {
+    redirect(`/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
   }
 }
 
-/**
- * Server Action: Register
- * - Creates a user with username/email + hashed password
- * - Redirects back to Sign-in with success banner + identifier prefilled
- */
 export async function register(formData: FormData) {
-  const identifier = String(formData.get("identifier") || "").trim();
+  const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
   const name = String(formData.get("name") || "").trim();
-  const useUsername = identifier.includes("@") === false; // naive check
 
-  if (!identifier || !password) {
-    redirect(`/register?error=Missing+fields&identifier=${encodeURIComponent(identifier)}`);
+  if (!username || !password) {
+    redirect(`/register?error=Missing+fields&username=${encodeURIComponent(username)}`);
   }
 
-  // Uniqueness checks
-  if (useUsername) {
-    const exists = await prisma.user.findUnique({ where: { username: identifier } });
-    if (exists) redirect(`/register?error=Username+already+in+use&identifier=${encodeURIComponent(identifier)}`);
-  } else {
-    const exists = await prisma.user.findUnique({ where: { email: identifier } });
-    if (exists) redirect(`/register?error=Email+already+in+use&identifier=${encodeURIComponent(identifier)}`);
+  // username uniqueness
+  const exists = await prisma.user.findUnique({ where: { username } });
+  if (exists) {
+    redirect(`/register?error=Username+already+in+use&username=${encodeURIComponent(username)}`);
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -78,16 +62,14 @@ export async function register(formData: FormData) {
   await prisma.user.create({
     data: {
       name: name || null,
-      username: useUsername ? identifier : null,
-      email: useUsername ? null : identifier,
+      username,            // always set
+      email: null,         // optional; keep null since you’re not using email
       passwordHash,
     },
   });
 
-  // Back to sign-in with success banner and prefilled identifier
-  redirect(`/signin?registered=1&identifier=${encodeURIComponent(identifier)}`);
+  redirect(`/signin?registered=1&username=${encodeURIComponent(username)}`);
 }
-
 
 export async function logout() {
   await signOut({ redirectTo: "/signin" });

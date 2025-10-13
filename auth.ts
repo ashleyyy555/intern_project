@@ -1,57 +1,41 @@
 // auth.ts
+export const runtime = "nodejs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export const runtime = "nodejs";
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
-  
-  session: { strategy: "jwt" },
 
-  // If you are NOT using OAuth at all, you can remove the adapter.
-  // Keeping it is fine too (it’s handy if you add OAuth later).
-  //adapter: PrismaAdapter(prisma),
-
+export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       name: "Credentials",
       credentials: {
-        identifier: { label: "Username", type: "text" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(creds) {
-        if (!creds?.identifier || !creds?.password) return null;
+      authorize: async (credentials) => {
+        const username = String(credentials.username || "").trim();
+        const password = String(credentials.password || "");
 
-        // Find by username
-        const user = await prisma.user.findFirst({
-          where: {
-            OR: [
-              { username: creds.identifier },
-            ],
-          },
+        if (!username || !password) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { username },
+          select: { id: true, name: true, username: true, passwordHash: true },
         });
+
         if (!user || !user.passwordHash) return null;
 
-        const ok = await bcrypt.compare(String(creds.password), user.passwordHash);
+        const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;
 
-        // Minimal safe user object → becomes `user` on first JWT pass
-        return { id: user.id, name: user.name ?? null };
+        // Return the minimal user object for the session
+        return { id: user.id, name: user.name ?? user.username, username: user.username };
       },
     }),
   ],
-
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) token.sub = (user as any).id;
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token.sub) (session.user as any).id = token.sub;
-      return session;
-    },
-  },
+  session: { strategy: "jwt" },
 });
