@@ -5,7 +5,7 @@ import Link from "next/link";
 
 type SearchParams = {
   error?: string;
-  identifier?: string;
+  username?: string;
   from?: string; // "signin" if redirected here from login
 };
 
@@ -15,7 +15,7 @@ export default function RegisterPage({
   searchParams?: SearchParams;
 }) {
   const error = searchParams?.error;
-  const prefill = searchParams?.identifier || "";
+  const prefill = searchParams?.username || "";
   const fromSignin = searchParams?.from === "signin";
 
   return (
@@ -38,10 +38,10 @@ export default function RegisterPage({
         <form action={register} className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Email or Username
+              Username
             </label>
             <input
-              name="identifier"
+              name="username"
               defaultValue={prefill}
               className="mt-1 w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="your username"
