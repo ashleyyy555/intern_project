@@ -1,21 +1,21 @@
-// sign in page
+// app sign in page
 
 import { login } from "@/lib/auth";
 import Link from "next/link";
 
 type SearchParams = {
   error?: string;
-  username?: string;
+  identifier?: string;
   registered?: string; // "1" if just registered
 };
 
 export default function SignInPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams?: SearchParams;
 }) {
   const error = searchParams?.error;
-  const prefill = searchParams?.username || "";
+  const prefill = searchParams?.identifier || "";
   const registered = searchParams?.registered === "1";
 
   return (
@@ -23,7 +23,7 @@ export default function SignInPage({
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg mx-4">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Database</h2>
-          <p className="text-gray-600">Log in to key in and view database</p>
+          <p className="text-gray-600">Sign in to key in and view data</p>
         </div>
 
         {registered && (
@@ -45,7 +45,7 @@ export default function SignInPage({
               Username
             </label>
             <input
-              name="username"
+              name="identifier"
               defaultValue={prefill}
               className="mt-1 w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="your username"
