@@ -32,6 +32,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.passwordHash) return null;
 
+        // --- DEBUGGING CHECK: Ensure the hash is retrieved fully ---
+        // A standard bcrypt hash is around 60 characters long.
+        console.log(`[auth] Retrieved hash length: ${user.passwordHash.length}`);
+        // ------------------------------------------------------------
+
         const ok = await bcrypt.compare(password, user.passwordHash);
         
         console.log("[auth] password match?", ok);

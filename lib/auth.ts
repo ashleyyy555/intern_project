@@ -1,4 +1,3 @@
-// lib/auth.ts
 "use server";
 
 import { redirect } from "next/navigation";
@@ -6,6 +5,9 @@ import { prisma } from "@/lib/prisma"; // ← change if you use a custom path
 import bcrypt from "bcryptjs";
 import { signIn } from "@/auth"; // from your NextAuth v5 `auth.ts`
 import { signOut } from "@/auth";
+// *** ADDED: Import AuthError from next-auth for correct error handling in Server Actions ***
+import { AuthError } from "next-auth";
+
 
 /**
  * Server Action: Sign in
@@ -33,13 +35,22 @@ export async function login(formData: FormData) {
 
   try {
     await signIn("credentials", {
-      username,            //must match the provider’s expected key
+      username,            
       password,
       redirectTo: callbackUrl,
     });
-    redirect(callbackUrl); // safety fallback
-  } catch {
-    redirect(`/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
+    // This part is generally unreachable because signIn handles the redirect.
+  } catch (error) {
+    // Check if the error is a true authentication failure from NextAuth.
+    if (error instanceof AuthError) {
+      // This is an actual failure (e.g., bad password, user not found).
+      redirect(`/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
+    }
+    
+    // If it's NOT an AuthError, it's the special internal error thrown by
+    // Next.js/NextAuth to stop the Server Action and execute the successful redirect.
+    // We must re-throw it so Next.js can handle it properly.
+    throw error;
   }
 }
 

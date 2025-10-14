@@ -9,7 +9,7 @@ type SearchParams = {
   registered?: string; // "1" if just registered
 };
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
   searchParams: SearchParams;

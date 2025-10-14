@@ -52,8 +52,8 @@ model VerificationToken {
 model User { //prisma.user?? >> npx prisma generate
   id String @id @default(cuid())
 
-  username      String?  @unique
-  passwordHash  String?
+  username      String  @unique
+  passwordHash  String @db.Text
 
   accounts Account[]
   sessions Session[]

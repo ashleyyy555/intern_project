@@ -9,7 +9,7 @@ type SearchParams = {
   from?: string; // "signin" if redirected here from login
 };
 
-export default function RegisterPage({
+export default async function RegisterPage({
   searchParams,
 }: {
   searchParams?: SearchParams;
