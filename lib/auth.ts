@@ -19,7 +19,7 @@ export async function login(formData: FormData) {
   const callbackUrl = String(formData.get("callbackUrl") || "/dashboard");
 
   if (!username || !password) {
-    redirect(`/signin?error=Missing+credentials&username=${encodeURIComponent(username)}`);
+    redirect(`/auth/signin?error=Missing+credentials&username=${encodeURIComponent(username)}`);
   }
 
   // (Optional) quick existence check; not required:
@@ -39,7 +39,7 @@ export async function login(formData: FormData) {
     });
     redirect(callbackUrl); // safety fallback
   } catch {
-    redirect(`/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
+    redirect(`/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
   }
 }
 
@@ -69,7 +69,7 @@ export async function register(formData: FormData) {
     },
   });
 
-  redirect(`/signin?registered=1&username=${encodeURIComponent(username)}`);
+  redirect(`/auth/signin?registered=1&username=${encodeURIComponent(username)}`);
 }
 
 export async function logout() {

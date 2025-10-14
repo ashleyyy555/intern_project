@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       name: "Credentials",
@@ -27,9 +28,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           select: { id: true, username: true, passwordHash: true },
         });
 
+        console.log("[auth] user found?", !!user, "has hash?", !!user?.passwordHash);
+
         if (!user || !user.passwordHash) return null;
 
         const ok = await bcrypt.compare(password, user.passwordHash);
+        
+        console.log("[auth] password match?", ok);
+
         if (!ok) return null;
 
         // Return the minimal user object for the session

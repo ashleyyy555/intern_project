@@ -55,18 +55,6 @@ export default function RegisterPage({
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Name (optional)
-            </label>
-            <input
-              name="name"
-              className="mt-1 w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Your display name"
-              autoComplete="name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <input

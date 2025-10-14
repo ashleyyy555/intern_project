@@ -1,5 +1,4 @@
 import React from 'react';
-import Sidebar from '@/components/Sidebar'; // Import the Sidebar component
 import './globals.css'; // Assuming you have a main app CSS file
 
 export const metadata = {
@@ -16,14 +15,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="flex">
-          {/* Render the integrated Sidebar component */}
-          <Sidebar />
-          
-          {/* Main content area: ml-56 offsets the fixed 56-unit width of the sidebar */}
-          <main className="flex-grow ml-56 p-8">
+        <div className="min-h-screen">
             {children}
-          </main>
         </div>
       </body>
     </html>
