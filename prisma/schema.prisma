@@ -60,21 +60,21 @@ model User { //prisma.user?? >> npx prisma generate
 
 }
 
-model CuttingOperation {
+model Cutting {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
-  StationID Int // e.g., "No 1"...
-  quantityForIH Int
-  quantityForS Int
-  quantityForOS Int
-  quantityForB Int
+  StationID Int?
+  quantityForIH Int?
+  quantityForS Int?
+  quantityForOS Int?
+  quantityForB Int?
 
 }
 
-model SewingOperation {
+model Sewing {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
-  operationType String // e.g., "cutting", "sewing", "finishing"
+  operationType String // e.g., "SP1", ...
   quantityForC1 Int?
   quantityForC2 Int?
   quantityForC3 Int?
@@ -116,26 +116,39 @@ model SewingOperation {
   
 }
 
-model InspectionOperation {
+model Inspection {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
-  StationID Int // e.g., "No 1"...
-  quantityForIH Int
-  quantityForS Int
-  quantityForOS Int
-  quantityForB Int
+  operationType String // eg., "IH", "S", "OS", "B"
+  quantityForI1 Int?
+  quantityForI2 Int?
+  quantityForI3 Int?
+  quantityForI4 Int?
+  quantityForI5 Int?
+  quantityForI6 Int?
+  quantityForI7 Int?
+  quantityForI8 Int?
+  quantityForI9 Int?
+  quantityForI10 Int?
+  quantityForI11 Int?
+  quantityForI12 Int?
+  quantityForI13 Int?
+  quantityForI14 Int?
 
   
 }
 
-model PackingOperation {
+model Packing {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
-  StationID Int // e.g., "No 1"...
-  quantityForInHouse Int
-  quantityForSemi Int
-  quantityForCompleteWt Int
-  quantityForCompleteWO Int
+  M1ForInHouse Int?
+  M1ForSemi Int?
+  M1ForCompleteWt Int?
+  M1ForCompleteWO Int?
+  M2ForInHouse Int?
+  M2ForSemi Int?
+  M2ForCompleteWt Int?
+  M2ForCompleteWO Int?
 
 }
 
@@ -143,9 +156,9 @@ model PackingOperation {
 model OperationTime {
   id String @id @default(cuid())
   SectionType String // e.g., "cutting", "sewing", "finishing"
-  workerId Int
-  year Int
-  month Int
+  OperatorId Int
+  year Int?
+  month Int?
   OperationTimeD1 Int?
   OperationTimeD2 Int?
   OperationTimeD3 Int?
