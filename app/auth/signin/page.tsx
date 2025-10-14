@@ -38,7 +38,7 @@ export default async function SignInPage({
         )}
 
         <form action={login} className="mt-6 space-y-4">
-          <input type="hidden" name="callbackUrl" value="/dashboard" />
+          <input type="hidden" name="callbackUrl" value="/main" />
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
