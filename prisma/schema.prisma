@@ -75,44 +75,44 @@ model Sewing {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
   operationType String // e.g., "SP1", ...
-  quantityForC1 Int?
-  quantityForC2 Int?
-  quantityForC3 Int?
-  quantityForC4 Int?
-  quantityForC5 Int?
-  quantityForC6 Int?
-  quantityForC7 Int?    
-  quantityForC8 Int?
-  quantityForC9 Int?
-  quantityForC10 Int?
-  quantityForC11 Int?
-  quantityForC12 Int?
-  quantityForS1 Int?
-  quantityForS2 Int?
-  quantityForS3 Int?
-  quantityForS4 Int?
-  quantityForS5 Int?
-  quantityForS6 Int?
-  quantityForS7 Int?
-  quantityForS8 Int?
-  quantityForS9 Int?
-  quantityForS10 Int?
-  quantityForS11 Int?
-  quantityForS12 Int?
-  quantityForS13 Int?
-  quantityForS14 Int?
-  quantityForS15 Int?
-  quantityForS16 Int?
-  quantityForS17 Int?
-  quantityForS18 Int?
-  quantityForS19 Int?
-  quantityForS20 Int?
-  quantityForS21 Int?
-  quantityForS22 Int?
-  quantityForS23 Int?
-  quantityForS24 Int?
-  quantityForST1 Int?
-  quantityForST2 Int?
+  C1 Int?
+  C2 Int?
+  C3 Int?
+  C4 Int?
+  C5 Int?
+  C6 Int?
+  C7 Int?    
+  C8 Int?
+  C9 Int?
+  C10 Int?
+  C11 Int?
+  C12 Int?
+  S1 Int?
+  S2 Int?
+  S3 Int?
+  S4 Int?
+  S5 Int?
+  S6 Int?
+  S7 Int?
+  S8 Int?
+  S9 Int?
+  S10 Int?
+  S11 Int?
+  S12 Int?
+  S13 Int?
+  S14 Int?
+  S15 Int?
+  S16 Int?
+  S17 Int?
+  S18 Int?
+  S19 Int?
+  S20 Int?
+  S21 Int?
+  S22 Int?
+  S23 Int?
+  S24 Int?
+  ST1 Int?
+  ST2 Int?
   
 }
 
@@ -120,20 +120,20 @@ model Inspection {
   id String @id @default(cuid())
   operationDate DateTime @default(now())
   operationType String // eg., "IH", "S", "OS", "B"
-  quantityForI1 Int?
-  quantityForI2 Int?
-  quantityForI3 Int?
-  quantityForI4 Int?
-  quantityForI5 Int?
-  quantityForI6 Int?
-  quantityForI7 Int?
-  quantityForI8 Int?
-  quantityForI9 Int?
-  quantityForI10 Int?
-  quantityForI11 Int?
-  quantityForI12 Int?
-  quantityForI13 Int?
-  quantityForI14 Int?
+  I1 Int?
+  I2 Int?
+  I3 Int?
+  I4 Int?
+  I5 Int?
+  I6 Int?
+  I7 Int?
+  I8 Int?
+  I9 Int?
+  I10 Int?
+  I11 Int?
+  I12 Int?
+  I13 Int?
+  I14 Int?
 
   
 }
@@ -143,12 +143,12 @@ model Packing {
   operationDate DateTime @default(now())
   M1ForInHouse Int?
   M1ForSemi Int?
-  M1ForCompleteWt Int?
-  M1ForCompleteWO Int?
+  M1ForCompleteWt100 Int?
+  M1ForCompleteWO100 Int?
   M2ForInHouse Int?
   M2ForSemi Int?
-  M2ForCompleteWt Int?
-  M2ForCompleteWO Int?
+  M2ForCompleteWt100 Int?
+  M2ForCompleteWO100 Int?
 
 }
 
@@ -159,37 +159,37 @@ model OperationTime {
   OperatorId Int
   year Int?
   month Int?
-  OperationTimeD1 Int?
-  OperationTimeD2 Int?
-  OperationTimeD3 Int?
-  OperationTimeD4 Int?
-  OperationTimeD5 Int?
-  OperationTimeD6 Int?
-  OperationTimeD7 Int?
-  OperationTimeD8 Int?
-  OperationTimeD9 Int?
-  OperationTimeD10 Int?
-  OperationTimeD11 Int?
-  OperationTimeD12 Int?
-  OperationTimeD13 Int?
-  OperationTimeD14 Int?
-  OperationTimeD15 Int?
-  OperationTimeD16 Int?
-  OperationTimeD17 Int?
-  OperationTimeD18 Int?
-  OperationTimeD19 Int?
-  OperationTimeD20 Int?
-  OperationTimeD21 Int?
-  OperationTimeD22 Int?
-  OperationTimeD23 Int?
-  OperationTimeD24 Int?
-  OperationTimeD25 Int?
-  OperationTimeD26 Int?
-  OperationTimeD27 Int?
-  OperationTimeD28 Int?
-  OperationTimeD29 Int?
-  OperationTimeD30 Int?
-  OperationTimeD31 Int?
+  D1 Int?
+  D2 Int?
+  D3 Int?
+  D4 Int?
+  D5 Int?
+  D6 Int?
+  D7 Int?
+  D8 Int?
+  D9 Int?
+  D10 Int?
+  D11 Int?
+  D12 Int?
+  D13 Int?
+  D14 Int?
+  D15 Int?
+  D16 Int?
+  D17 Int?
+  D18 Int?
+  D19 Int?
+  D20 Int?
+  D21 Int?
+  D22 Int?
+  D23 Int?
+  D24 Int?
+  D25 Int?
+  D26 Int?
+  D27 Int?
+  D28 Int?
+  D29 Int?
+  D30 Int?
+  D31 Int?
   
 
 }
