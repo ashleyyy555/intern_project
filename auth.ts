@@ -24,7 +24,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { username },
-          select: { id: true, name: true, username: true, passwordHash: true },
+          select: { id: true, username: true, passwordHash: true },
         });
 
         if (!user || !user.passwordHash) return null;
@@ -33,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!ok) return null;
 
         // Return the minimal user object for the session
-        return { id: user.id, name: user.name ?? user.username, username: user.username };
+        return { id: user.id, username: user.username };
       },
     }),
   ],

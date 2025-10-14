@@ -12,6 +12,7 @@ import { signOut } from "@/auth";
  * - If user not found → redirect to /register with identifier prefilled
  * - If found → call Auth.js credentials signIn
  */
+
 export async function login(formData: FormData) {
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
@@ -45,7 +46,7 @@ export async function login(formData: FormData) {
 export async function register(formData: FormData) {
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
-  const name = String(formData.get("name") || "").trim();
+  //const name = String(formData.get("name") || "").trim();
 
   if (!username || !password) {
     redirect(`/register?error=Missing+fields&username=${encodeURIComponent(username)}`);
@@ -61,9 +62,9 @@ export async function register(formData: FormData) {
 
   await prisma.user.create({
     data: {
-      name: name || null,
+      //name: name || null,
       username,            // always set
-      email: null,         // optional; keep null since you’re not using email
+      //email: null,         // optional; keep null since you’re not using email
       passwordHash,
     },
   });
@@ -72,5 +73,5 @@ export async function register(formData: FormData) {
 }
 
 export async function logout() {
-  await signOut({ redirectTo: "/signin" });
+  await signOut({ redirectTo: "/auth/signin" });
 }

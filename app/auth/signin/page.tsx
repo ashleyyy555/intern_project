@@ -79,7 +79,7 @@ export default function SignInPage({
         <div className="mt-6 text-center text-sm text-gray-600">
           No account?{" "}
           <Link
-            href={`/register${prefill ? `?identifier=${encodeURIComponent(prefill)}` : ""}`}
+            href={`/register${prefill ? `?username=${encodeURIComponent(prefill)}` : ""}`}
             className="text-indigo-600 hover:text-indigo-500"
           >
             Create one

@@ -94,7 +94,7 @@ export default function RegisterPage({
         <div className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{" "}
           <Link
-            href={`/signin${prefill ? `?identifier=${encodeURIComponent(prefill)}` : ""}`}
+            href={`/auth/signin${prefill ? `?identifier=${encodeURIComponent(prefill)}` : ""}`}
             className="text-indigo-600 hover:text-indigo-500"
           >
             Sign in
