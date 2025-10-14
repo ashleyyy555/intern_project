@@ -5,20 +5,20 @@ import React, { useState } from 'react';
 // Component for the Operating Time Data Entry Page. 
 export default function OperatingPage() {
   // State for the main form fields
-  // Date state removed per request
-  const [operatorId, setOperatorId] = useState(''); // New state for Operator ID
+  const [operatorId, setOperatorId] = useState(''); // State for Operator ID
+  const [reportMonth, setReportMonth] = useState(''); // New state for Month and Year
   const [operationType, setOperationType] = useState('sewing');
   
   // State for the 31 data entry fields
   const [dataEntries, setDataEntries] = useState({
-    OT1: '', OT2: '', OT3: '', OT4: '',
-    OT5: '', OT6: '', OT7: '', OT8: '',
-    OT9: '', OT10: '', OT11: '', OT12: '',
-    OT13: '', OT14: '', OT15: '', OT16: '',
-    OT17: '', OT18: '', OT19: '', OT20: '',
-    OT21: '', OT22: '', OT23: '', OT24: '',
-    OT25: '', OT26: '', OT27: '', OT28: '',
-    OT29: '', OT30: '', OT31: '',
+    D1: '', D2: '', D3: '', D4: '',
+    D5: '', D6: '', D7: '', D8: '',
+    D9: '', D10: '', D11: '', D12: '',
+    D13: '', D14: '', D15: '', D16: '',
+    D17: '', D18: '', D19: '', D20: '',
+    D21: '', D22: '', D23: '', D24: '',
+    D25: '', D26: '', D27: '', D28: '',
+    D29: '', D30: '', D31: '',
   });
 
   // Display-only value for Operation Quantity (simulating a calculated field)
@@ -42,8 +42,7 @@ export default function OperatingPage() {
   // Handler for form submission
   const handleSave = () => {
     // In a real application, you would send all states to an API.
-    // Removed 'date' from the console log
-    console.log("Saving Data:", { operatorId, operationType, operationQuantity, dataEntries });
+    console.log("Saving Data:", { operatorId, reportMonth, operationType, operationQuantity, dataEntries });
 
     setStatusMessage({
         type: 'success',
@@ -55,6 +54,7 @@ export default function OperatingPage() {
       Object.keys(dataEntries).reduce((acc, key) => ({ ...acc, [key]: '' }), {})
     );
     setOperatorId('');
+    setReportMonth(''); // Reset the month/year input too
     
     // Clear status message after a delay
     setTimeout(() => setStatusMessage(null), 3000);
@@ -98,24 +98,41 @@ export default function OperatingPage() {
       {/* Main Form Card */}
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 space-y-6">
         
-        {/* Row 1: Operator ID (Now a single field, taking full width of its container) */}
-        <div className="flex items-center space-x-3 max-w-sm">
-          {/* Operator ID Input */}
-          <label htmlFor="operator-id" className="text-lg font-semibold w-24 shrink-0">Operator ID:</label>
-          <input
-            id="operator-id"
-            type="text"
-            placeholder="Enter ID"
-            value={operatorId}
-            onChange={(e) => setOperatorId(e.target.value)}
-            className={baseInputStyle}
-          />
+        {/* Row 1: Operator ID (Left) and Month/Year (Right) */}
+        {/* Using justify-between to push them to opposite ends */}
+        <div className="flex justify-between items-start">
+            
+            {/* Operator ID Input (Left) */}
+            <div className="flex items-center space-x-3 w-1/2 pr-4"> {/* Added pr-4 for spacing */}
+                <label htmlFor="operator-id" className="text-lg font-semibold w-24 shrink-0">Operator ID:</label>
+                <input
+                    id="operator-id"
+                    type="text"
+                    placeholder="Enter ID"
+                    value={operatorId}
+                    onChange={(e) => setOperatorId(e.target.value)}
+                    className={baseInputStyle}
+                />
+            </div>
+
+            {/* Month and Year Input (Right) */}
+            <div className="flex items-center space-x-3 w-1/2 pl-4 justify-end"> {/* Added pl-4 and justify-end */}
+                <label htmlFor="report-month" className="text-lg font-semibold shrink-0">Month & Year:</label>
+                <input
+                    id="report-month"
+                    type="month"
+                    placeholder="YYYY-MM"
+                    value={reportMonth}
+                    onChange={(e) => setReportMonth(e.target.value)}
+                    className={baseInputStyle}
+                />
+            </div>
         </div>
         
         {/* Row 2: Operation Type */}
         <div className="border-t pt-4 border-gray-200">
-          <div className="flex items-center space-x-3 max-w-md">
-            <label htmlFor="op-type" className="text-lg font-semibold w-36 shrink-0">Operating Type:</label>
+          <div className="flex items-center space-x-3 max-w-md"> {/* Reduced width slightly for better alignment */}
+            <label htmlFor="op-type" className="text-lg font-semibold w-36 shrink-0">Section Type:</label>
             <select
               id="op-type"
               value={operationType}
@@ -132,25 +149,13 @@ export default function OperatingPage() {
         <div className="pt-4 border-t border-gray-200">
             <h2 className="text-lg font-semibold mb-4 text-indigo-600">Operating Time (minutes) :</h2>
             
-            {/* Row 1: OT1 to OT4 */}
+            {/* Rows for OT1 to OT31 */}
             {renderInputRow(0, 4)}
-
-            {/* Row 2: OT5 to OT8 */}
             {renderInputRow(4, 8)}
-
-            {/* Row 3: OT9 to OT12 */}
             {renderInputRow(8, 12)}
-
-            {/* Row 4: OT13 to OT16 */}
             {renderInputRow(12, 16)}
-
-            {/* Row 5: OT17 to OT20 */}
             {renderInputRow(16, 20)} 
-
-            {/* Row 6: OT21 to OT24 */}
             {renderInputRow(20, 24)}
-
-            {/* Row 7: OT25 to OT28 */}
             {renderInputRow(24, 28)}
 
             {/* Row 8: OT29, OT30, OT31 (Partial row) */}
