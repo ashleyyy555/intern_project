@@ -157,8 +157,7 @@ model OperationTime {
   id String @id @default(cuid())
   SectionType String // e.g., "cutting", "sewing", "finishing"
   OperatorId Int
-  year Int?
-  month Int?
+  yearMonth String // e.g., "2023-01"
   D1 Int?
   D2 Int?
   D3 Int?
