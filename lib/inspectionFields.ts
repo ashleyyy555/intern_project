@@ -62,7 +62,7 @@ export const SEWING_FIELD_MAP: Record<SewingKey, string> = {
   S7: "S7", 
   S8: "S8", 
   S9: "S9", 
-  S10: "10", 
+  S10: "S10", 
   S11: "S11", 
   S12: "S12", 
   S13: "S13", 

@@ -68,6 +68,7 @@ model Cutting {
   quantityForS Int?
   quantityForOS Int?
   quantityForB Int?
+  updatedAt DateTime @updatedAt
 
 }
 
@@ -113,6 +114,7 @@ model Sewing {
   S24 Int?
   ST1 Int?
   ST2 Int?
+  updatedAt DateTime @updatedAt
   
 }
 
@@ -134,7 +136,7 @@ model Inspection {
   I12 Int?
   I13 Int?
   I14 Int?
-
+  updatedAt DateTime @updatedAt
   
 }
 
@@ -149,6 +151,7 @@ model Packing {
   M2ForSemi Int?
   M2ForCompleteWt100 Int?
   M2ForCompleteWO100 Int?
+  updatedAt DateTime @updatedAt
 
 }
 
@@ -189,7 +192,7 @@ model OperationTime {
   D29 Int?
   D30 Int?
   D31 Int?
-  
+  updatedAt DateTime @updatedAt
 
 }
 
