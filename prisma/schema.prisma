@@ -38,7 +38,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -49,150 +49,157 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model User { //prisma.user?? >> npx prisma generate
+model User {
   id String @id @default(cuid())
 
-  username      String  @unique
-  passwordHash  String @db.Text
+  username     String @unique
+  passwordHash String @db.Text
 
   accounts Account[]
   sessions Session[]
-
 }
 
 model Cutting {
-  id String @id @default(cuid())
+  id            String   @id @default(cuid())
   operationDate DateTime @default(now())
-  StationID Int?
+  StationID     Int?
   quantityForIH Int?
-  quantityForS Int?
+  quantityForS  Int?
   quantityForOS Int?
-  quantityForB Int?
-  updatedAt DateTime @updatedAt
-
+  quantityForB  Int?
+  updatedAt     DateTime @updatedAt
 }
 
 model Sewing {
-  id String @id @default(cuid())
+  id            String   @id @default(cuid())
   operationDate DateTime @default(now())
   operationType String // e.g., "SP1", ...
-  C1 Int?
-  C2 Int?
-  C3 Int?
-  C4 Int?
-  C5 Int?
-  C6 Int?
-  C7 Int?    
-  C8 Int?
-  C9 Int?
-  C10 Int?
-  C11 Int?
-  C12 Int?
-  S1 Int?
-  S2 Int?
-  S3 Int?
-  S4 Int?
-  S5 Int?
-  S6 Int?
-  S7 Int?
-  S8 Int?
-  S9 Int?
-  S10 Int?
-  S11 Int?
-  S12 Int?
-  S13 Int?
-  S14 Int?
-  S15 Int?
-  S16 Int?
-  S17 Int?
-  S18 Int?
-  S19 Int?
-  S20 Int?
-  S21 Int?
-  S22 Int?
-  S23 Int?
-  S24 Int?
-  ST1 Int?
-  ST2 Int?
-  updatedAt DateTime @updatedAt
-  
+  C1            Int?
+  C2            Int?
+  C3            Int?
+  C4            Int?
+  C5            Int?
+  C6            Int?
+  C7            Int?
+  C8            Int?
+  C9            Int?
+  C10           Int?
+  C11           Int?
+  C12           Int?
+  S1            Int?
+  S2            Int?
+  S3            Int?
+  S4            Int?
+  S5            Int?
+  S6            Int?
+  S7            Int?
+  S8            Int?
+  S9            Int?
+  S10           Int?
+  S11           Int?
+  S12           Int?
+  S13           Int?
+  S14           Int?
+  S15           Int?
+  S16           Int?
+  S17           Int?
+  S18           Int?
+  S19           Int?
+  S20           Int?
+  S21           Int?
+  S22           Int?
+  S23           Int?
+  S24           Int?
+  ST1           Int?
+  ST2           Int?
+  updatedAt     DateTime @updatedAt
 }
+
+
 
 model Inspection {
-  id String @id @default(cuid())
+  id            String   @id @default(cuid())
   operationDate DateTime @default(now())
   operationType String // eg., "IH", "S", "OS", "B"
-  I1 Int?
-  I2 Int?
-  I3 Int?
-  I4 Int?
-  I5 Int?
-  I6 Int?
-  I7 Int?
-  I8 Int?
-  I9 Int?
-  I10 Int?
-  I11 Int?
-  I12 Int?
-  I13 Int?
-  I14 Int?
+  I1            Int?
+  I2            Int?
+  I3            Int?
+  I4            Int?
+  I5            Int?
+  I6            Int?
+  I7            Int?
+  I8            Int?
+  I9            Int?
+  I10           Int?
+  I11           Int?
+  I12           Int?
+  I13           Int?
+  I14           Int?
+
+  yearMonth String @db.VarChar(7)
+
   updatedAt DateTime @updatedAt
-  
+
+  @@index([operationDate])
+  @@index([operationType])
+  @@index([yearMonth])
 }
+
+
 
 model Packing {
-  id String @id @default(cuid())
-  operationDate DateTime @default(now())
-  M1ForInHouse Int?
-  M1ForSemi Int?
-  M1ForCompleteWt100 Int?
-  M1ForCompleteWO100 Int?
-  M2ForInHouse Int?
-  M2ForSemi Int?
-  M2ForCompleteWt100 Int?
-  M2ForCompleteWO100 Int?
-  updatedAt DateTime @updatedAt
+  id                       String   @id @default(cuid())
+  operationDate            DateTime @default(now())
+  M1ForInHouse             Int?
+  M1ForSemi                Int?
+  M1ForCompleteWt100       Int?
+  M1ForCompleteWO100       Int?
+  M2ForInHouse             Int?
+  M2ForSemi                Int?
+  M2ForCompleteWt100       Int?
+  M2ForCompleteWO100       Int?
+  updatedAt                DateTime @updatedAt
 
+  @@index([operationDate])
 }
+
 
 
 model OperationTime {
-  id String @id @default(cuid())
+  id          String   @id @default(cuid())
   SectionType String // e.g., "cutting", "sewing", "finishing"
-  OperatorId Int
-  yearMonth String // e.g., "2023-01"
-  D1 Int?
-  D2 Int?
-  D3 Int?
-  D4 Int?
-  D5 Int?
-  D6 Int?
-  D7 Int?
-  D8 Int?
-  D9 Int?
-  D10 Int?
-  D11 Int?
-  D12 Int?
-  D13 Int?
-  D14 Int?
-  D15 Int?
-  D16 Int?
-  D17 Int?
-  D18 Int?
-  D19 Int?
-  D20 Int?
-  D21 Int?
-  D22 Int?
-  D23 Int?
-  D24 Int?
-  D25 Int?
-  D26 Int?
-  D27 Int?
-  D28 Int?
-  D29 Int?
-  D30 Int?
-  D31 Int?
-  updatedAt DateTime @updatedAt
-
+  OperatorId  Int
+  yearMonth   String // e.g., "2023-01"
+  D1          Int?
+  D2          Int?
+  D3          Int?
+  D4          Int?
+  D5          Int?
+  D6          Int?
+  D7          Int?
+  D8          Int?
+  D9          Int?
+  D10         Int?
+  D11         Int?
+  D12         Int?
+  D13         Int?
+  D14         Int?
+  D15         Int?
+  D16         Int?
+  D17         Int?
+  D18         Int?
+  D19         Int?
+  D20         Int?
+  D21         Int?
+  D22         Int?
+  D23         Int?
+  D24         Int?
+  D25         Int?
+  D26         Int?
+  D27         Int?
+  D28         Int?
+  D29         Int?
+  D30         Int?
+  D31         Int?
+  updatedAt   DateTime @updatedAt
 }
-
