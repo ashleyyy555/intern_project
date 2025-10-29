@@ -19,7 +19,7 @@ const sectionOptions = [
   { value: "sewing", label: "Sewing" },
   { value: "100%", label: "100% Inspection" },
   { value: "packing", label: "Packing" },
-  { value: "operationtime", label: "Operation Time" },
+  { value: "operationtime", label: "Operating Time" },
 ];
 
 // Helper: today in YYYY-MM-DD
@@ -107,6 +107,8 @@ export default function SearchPage() {
         ? { key: "yearMonth", label: "Month/Year" }
         : { key: "operationDate", label: "Date" };
 
+    const operationTypeHeader = { key: "operationType", label: "Operation Type" }; // New Header
+
     if (sec === "packing") {
       const packingHeaders = PACKING_KEYS.map((key) => ({
         key,
@@ -119,21 +121,31 @@ export default function SearchPage() {
         key,
         label: INSPECTION_HEADERS[key],
       }));
-      return [dateHeader, ...inspectionHeaders];
+      // ADD operationTypeHeader here
+      return [dateHeader, operationTypeHeader, ...inspectionHeaders];
     }
     if (sec === "sewing") {
       const sewingHeaders = SEWING_KEYS.map((key) => ({
         key,
         label: SEWING_HEADERS[key],
       }));
-      return [dateHeader, ...sewingHeaders];
+      // ADD operationTypeHeader here
+      return [dateHeader, operationTypeHeader, ...sewingHeaders];
     }
     if (sec === "operationtime") {
       const operationHeaders = OPERATION_KEYS.map((key) => ({
         key,
         label: OPERATION_HEADERS[key],
       }));
-      return [{ key: "yearMonth", label: "Month/Year" }, ...operationHeaders];
+      // ADDING SectionType and OperatorId headers here
+      const sectionTypeHeader = { key: "SectionType", label: "Section Type" };
+      const operatorIdHeader = { key: "OperatorId", label: "Operator ID" };
+      return [
+        { key: "yearMonth", label: "Month/Year" },
+        sectionTypeHeader, // New column
+        operatorIdHeader, // New column
+        ...operationHeaders
+      ];
     }
     // default (unused path)
     return [
@@ -147,6 +159,7 @@ export default function SearchPage() {
   // Map a DB row to table cells
   const getRowData = (row: any, sec: string) => {
     let date = "N/A";
+    const operationType = row.operationType || "N/A"; // Get operationType
 
     if (sec === "operationtime") {
       date = row.yearMonth || "N/A";
@@ -163,8 +176,10 @@ export default function SearchPage() {
       ];
     }
     if (sec === "100%") {
+      // INCLUDE operationType
       return [
         date,
+        operationType,
         row[INSPECTION_FIELD_MAP.I1], row[INSPECTION_FIELD_MAP.I2], row[INSPECTION_FIELD_MAP.I3],
         row[INSPECTION_FIELD_MAP.I4], row[INSPECTION_FIELD_MAP.I5], row[INSPECTION_FIELD_MAP.I6],
         row[INSPECTION_FIELD_MAP.I7], row[INSPECTION_FIELD_MAP.I8], row[INSPECTION_FIELD_MAP.I9],
@@ -173,8 +188,14 @@ export default function SearchPage() {
       ];
     }
     if (sec === "operationtime") {
+      // EXTRACTING SectionType and OperatorId
+      const sectionType = row.SectionType || "N/A";
+      const operatorId = row.OperatorId || "N/A";
+
       return [
         date,
+        sectionType, // New data point
+        operatorId, // New data point
         row[OPERATION_FIELD_MAP.D1], row[OPERATION_FIELD_MAP.D2], row[OPERATION_FIELD_MAP.D3],
         row[OPERATION_FIELD_MAP.D4], row[OPERATION_FIELD_MAP.D5], row[OPERATION_FIELD_MAP.D6],
         row[OPERATION_FIELD_MAP.D7], row[OPERATION_FIELD_MAP.D8], row[OPERATION_FIELD_MAP.D9],
@@ -189,8 +210,10 @@ export default function SearchPage() {
       ];
     }
     if (sec === "sewing") {
+      // INCLUDE operationType
       return [
         date,
+        operationType,
         row[SEWING_FIELD_MAP.C1], row[SEWING_FIELD_MAP.C2], row[SEWING_FIELD_MAP.C3], row[SEWING_FIELD_MAP.C4],
         row[SEWING_FIELD_MAP.C5], row[SEWING_FIELD_MAP.C6], row[SEWING_FIELD_MAP.C7], row[SEWING_FIELD_MAP.C8],
         row[SEWING_FIELD_MAP.C9], row[SEWING_FIELD_MAP.C10], row[SEWING_FIELD_MAP.C11], row[SEWING_FIELD_MAP.C12],
@@ -440,6 +463,29 @@ export default function SearchPage() {
                   />
                 </div>
               )}
+              {/* Added SectionType and OperatorId inputs for operationtime edit modal */}
+              {editSection === "operationtime" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Section Type</label>
+                    <input
+                      type="text"
+                      value={editData?.SectionType ?? ""}
+                      onChange={(e) => setEditData((d: any) => ({ ...d, SectionType: e.target.value }))}
+                      className="w-full p-2 border rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Operator ID</label>
+                    <input
+                      type="text"
+                      value={editData?.OperatorId ?? ""}
+                      onChange={(e) => setEditData((d: any) => ({ ...d, OperatorId: e.target.value }))}
+                      className="w-full p-2 border rounded-lg"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Dynamic fields */}
@@ -448,6 +494,12 @@ export default function SearchPage() {
                 const keys = getKeysForSection(editSection);
                 const labels = getHeadersForSection(editSection);
                 const map = getFieldMapForSection(editSection);
+
+                // Add an input for operationType if applicable
+                if (editSection === "100%" || editSection === "sewing") {
+                    // This is a custom input outside of the dynamic keys loop
+                    // but you might also want to include it in the editData
+                }
 
                 return keys.map((k) => {
                   const col = (map as any)[k]; // actual DB column name
@@ -469,8 +521,8 @@ export default function SearchPage() {
                                     numericCols.has(col) && e.target.value !== ""
                                         ? Number(e.target.value)
                                         : e.target.value,
-                    }))
-                }
+                            }))
+                        }
                         className="p-2 border rounded"
                       />
                     </div>
@@ -478,6 +530,23 @@ export default function SearchPage() {
                 });
               })()}
             </div>
+            
+            {/* Added operationType input field to the Edit Modal for Sewing/100% */}
+            {(editSection === "100%" || editSection === "sewing") && (
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Operation Type</label>
+                    <input
+                        type="text"
+                        value={editData?.operationType ?? ""}
+                        onChange={(e) =>
+                            setEditData((d: any) => ({ ...d, operationType: e.target.value }))
+                        }
+                        className="w-full p-2 border rounded-lg"
+                        placeholder="e.g., Semi, Complete"
+                    />
+                </div>
+            )}
+
 
             {/* Save */}
             <div className="mt-5 flex justify-end gap-2">
