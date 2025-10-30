@@ -240,3 +240,30 @@ export const OPERATION_HEADERS: Record<OperationKey, string> = {
     D30: "D30",
     D31: "D31",
 };
+
+// ---- Efficiency: Sewing ----
+export const EFF_SEWING_INT_FIELDS = [
+  "m1_target_panel",
+  "m2_workers_normal",
+  "m4_workers_ot",
+] as const;
+
+export const EFF_SEWING_DEC_FIELDS = [
+  "m3_operating_mins_normal",
+  "m5_operating_mins_ot",
+] as const;
+
+// ---- Efficiency: 100% Inspection ----
+export const EFF_100_INT_FIELDS = [
+  "m1_target_panel",
+  "m6_target_duffel",
+  "m7_target_blower",
+  "m2_workers_normal",
+  "m4_workers_ot",
+] as const;
+
+export const EFF_100_DEC_FIELDS = [
+  "m3_operating_mins_normal",
+  "m5_operating_mins_ot",
+] as const;
+
