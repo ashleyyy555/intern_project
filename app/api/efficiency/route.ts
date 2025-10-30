@@ -63,18 +63,29 @@ export async function POST(req: Request) {
         m5_operating_mins_ot: toNumOrNull(dataEntries.M5),
       };
 
-      // upsert by unique (operationDate)
-      const saved = await prisma.efficiencySewing.upsert({
-        where: { operationDate },
-        create: payload,
-        update: payload,
-        select: { id: true, operationDate: true },
-      });
+      try {
+        // FIX: Replaced upsert with create to enforce no overwrites
+        const saved = await prisma.efficiencySewing.create({
+          data: payload,
+          select: { id: true, operationDate: true },
+        });
 
-      return NextResponse.json(
-        { ok: true, table: "EfficiencySewing", data: saved },
-        { status: 201 }
-      );
+        return NextResponse.json(
+          { ok: true, table: "EfficiencySewing", data: saved },
+          { status: 201 }
+        );
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          return NextResponse.json(
+            { 
+              message: `Duplicate entry blocked for Sewing efficiency on date ${dateRaw}.`,
+              errorType: "DuplicateEntry"
+            },
+            { status: 409 }
+          );
+        }
+        throw err; // Re-throw other errors for outer catch
+      }
     }
 
     if (processType === "100% Inspection") {
@@ -93,18 +104,29 @@ export async function POST(req: Request) {
         m5_operating_mins_ot: toNumOrNull(dataEntries.M5),
       };
 
-      // upsert by unique (operationDate)
-      const saved = await prisma.efficiencyInspection100.upsert({
-        where: { operationDate },
-        create: payload,
-        update: payload,
-        select: { id: true, operationDate: true },
-      });
+      try {
+        // FIX: Replaced upsert with create to enforce no overwrites
+        const saved = await prisma.efficiencyInspection100.create({
+          data: payload,
+          select: { id: true, operationDate: true },
+        });
 
-      return NextResponse.json(
-        { ok: true, table: "EfficiencyInspection100", data: saved },
-        { status: 201 }
-      );
+        return NextResponse.json(
+          { ok: true, table: "EfficiencyInspection100", data: saved },
+          { status: 201 }
+        );
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          return NextResponse.json(
+            { 
+              message: `Duplicate entry blocked for 100% Inspection efficiency on date ${dateRaw}.`,
+              errorType: "DuplicateEntry"
+            },
+            { status: 409 }
+          );
+        }
+        throw err; // Re-throw other errors for outer catch
+      }
     }
 
     // Should never reach here because of ALLOWED_PROCESS_TYPES

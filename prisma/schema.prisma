@@ -73,46 +73,52 @@ model Cutting {
 model Sewing {
   id            String   @id @default(cuid())
   operationDate DateTime @default(now())
-  operationType String // e.g., "SP1", ...
-  C1            Int?
-  C2            Int?
-  C3            Int?
-  C4            Int?
-  C5            Int?
-  C6            Int?
-  C7            Int?
-  C8            Int?
-  C9            Int?
-  C10           Int?
-  C11           Int?
-  C12           Int?
-  S1            Int?
-  S2            Int?
-  S3            Int?
-  S4            Int?
-  S5            Int?
-  S6            Int?
-  S7            Int?
-  S8            Int?
-  S9            Int?
-  S10           Int?
-  S11           Int?
-  S12           Int?
-  S13           Int?
-  S14           Int?
-  S15           Int?
-  S16           Int?
-  S17           Int?
-  S18           Int?
-  S19           Int?
-  S20           Int?
-  S21           Int?
-  S22           Int?
-  S23           Int?
-  S24           Int?
-  ST1           Int?
-  ST2           Int?
+  operationType String    // e.g., "SP1", ...
+
+  C1  Int?  @map("C1")   
+  C2  Int?  @map("C2")   
+  C3  Int?  @map("C3")   
+  C4  Int?  @map("C4")
+  C5  Int?  @map("C5")   
+  C6  Int?  @map("C6")   
+  C7  Int?  @map("C7")   
+  C8  Int?  @map("C8")
+  C9  Int?  @map("C9")   
+  C10 Int?  @map("C10")  
+  C11 Int?  @map("C11")  
+  C12 Int?  @map("C12")
+  S1  Int?  @map("S1")   
+  S2  Int?  @map("S2")   
+  S3  Int?  @map("S3")   
+  S4  Int?  @map("S4")
+  S5  Int?  @map("S5")   
+  S6  Int?  @map("S6")   
+  S7  Int?  @map("S7")   
+  S8  Int?  @map("S8")
+  S9  Int?  @map("S9")   
+  S10 Int?  @map("S10")  
+  S11 Int?  @map("S11")  
+  S12 Int?  @map("S12")
+  S13 Int?  @map("S13")  
+  S14 Int?  @map("S14")  
+  S15 Int?  @map("S15")  
+  S16 Int?  @map("S16")
+  S17 Int?  @map("S17")  
+  S18 Int?  @map("S18")  
+  S19 Int?  @map("S19")  
+  S20 Int?  @map("S20")
+  S21 Int?  @map("S21")  
+  S22 Int?  @map("S22")  
+  S23 Int?  @map("S23")  
+  S24 Int?  @map("S24")
+  ST1 Int?  @map("ST1")  
+  ST2 Int?  @map("ST2")
+
   updatedAt     DateTime @updatedAt
+
+  @@index([operationDate])
+  // One row per day per operation type (e.g., SP1, SP2...)
+  @@unique([operationDate, operationType])
 }
 
 
@@ -143,6 +149,8 @@ model Inspection {
   @@index([operationDate])
   @@index([operationType])
   @@index([yearMonth])
+
+  @@unique([operationDate, operationType])
 }
 
 
@@ -161,47 +169,56 @@ model Packing {
   updatedAt                DateTime @updatedAt
 
   @@index([operationDate])
+  @@unique([operationDate])
 }
 
 
 
 model OperationTime {
   id          String   @id @default(cuid())
-  SectionType String // e.g., "cutting", "sewing", "finishing"
+  SectionType String    // e.g., "cutting", "sewing", "finishing"
   OperatorId  Int
-  yearMonth   String // e.g., "2023-01"
-  D1          Int?
-  D2          Int?
-  D3          Int?
-  D4          Int?
-  D5          Int?
-  D6          Int?
-  D7          Int?
-  D8          Int?
-  D9          Int?
-  D10         Int?
-  D11         Int?
-  D12         Int?
-  D13         Int?
-  D14         Int?
-  D15         Int?
-  D16         Int?
-  D17         Int?
-  D18         Int?
-  D19         Int?
-  D20         Int?
-  D21         Int?
-  D22         Int?
-  D23         Int?
-  D24         Int?
-  D25         Int?
-  D26         Int?
-  D27         Int?
-  D28         Int?
-  D29         Int?
-  D30         Int?
-  D31         Int?
+  yearMonth   String    // "YYYY-MM"
+
+  D1  Int?  @map("D1")   
+  D2  Int?  @map("D2")   
+  D3  Int?  @map("D3")   
+  D4  Int?  @map("D4")
+  D5  Int?  @map("D5")   
+  D6  Int?  @map("D6")   
+  D7  Int?  @map("D7")   
+  D8  Int?  @map("D8")
+  D9  Int?  @map("D9")   
+  D10 Int?  @map("D10")  
+  D11 Int?  @map("D11")  
+  D12 Int?  @map("D12")
+  D13 Int?  @map("D13")  
+  D14 Int?  @map("D14")  
+  D15 Int?  @map("D15")  
+  D16 Int?  @map("D16")
+  D17 Int?  @map("D17")  
+  D18 Int?  @map("D18")  
+  D19 Int?  @map("D19")  
+  D20 Int?  @map("D20")
+  D21 Int?  @map("D21")  
+  D22 Int?  @map("D22")  
+  D23 Int?  @map("D23")  
+  D24 Int?  @map("D24")
+  D25 Int?  @map("D25")  
+  D26 Int?  @map("D26")  
+  D27 Int?  @map("D27")  
+  D28 Int?  @map("D28")
+  D29 Int?  @map("D29")  
+  D30 Int?  @map("D30")  
+  D31 Int?  @map("D31")
+
   updatedAt   DateTime @updatedAt
+
+  // One row per (section, operator, month)
+  @@unique([SectionType, OperatorId, yearMonth])
+
+  @@index([yearMonth])
+  @@index([SectionType, yearMonth])
 }
 
 

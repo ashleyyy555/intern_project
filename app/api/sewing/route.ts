@@ -246,7 +246,10 @@ export async function POST(req: Request) {
     // --- Decision Tree: CREATION (Priority 1) ---
     if (dateRaw && operationType) {
       
-      // --- Creation Validations (from user's original creation file) ---
+      // --- Creation Validations ---
+      // NOTE: The 'operationDate' used for the unique key must be a clean Date object 
+      // without time component for the upsert/create logic to match against the DB.
+      // We rely on 'new Date(dateRaw)' to produce the UTC midnight date if dateRaw is "YYYY-MM-DD".
       const operationDate = new Date(dateRaw);
       if (Number.isNaN(operationDate.getTime())) {
         return NextResponse.json({ message: "Invalid 'date' value." }, { status: 400 });
@@ -262,42 +265,63 @@ export async function POST(req: Request) {
         coerced[key] = toIntOrNull(dataEntries?.[key]);
       }
 
-      // --- Write to DB ---
-      const created = await prisma.sewing.create({
-        data: {
-          operationDate,
-          operationType,
-          ...coerced,
-        },
-        select: {
-          id: true,
-          operationDate: true,
-          operationType: true,
-        },
-      });
+      // --- FIX: Change from upsert to conditional create ---
+      try {
+          const saved = await prisma.sewing.create({ // CHANGED from upsert to create
+            data: {
+              operationDate,
+              operationType,
+              ...coerced,
+            },
+            select: {
+              id: true,
+              operationDate: true,
+              operationType: true,
+            },
+          });
+          
+          // Successfully created
+          return NextResponse.json({ data: saved }, { status: 201 });
 
-      return NextResponse.json({ data: created }, { status: 201 });
+      } catch (e) {
+          // Check if the error is a unique constraint violation (P2002)
+          // This happens when a record with the same operationDate and operationType already exists.
+          if ((e as any).code === 'P2002') {
+              console.warn("[/api/sewing-report] Duplicate entry blocked:", { operationDate: dateRaw, operationType });
+              return NextResponse.json(
+                  { 
+                      message: `Duplicate entry blocked. A record for Date: ${dateRaw} and Operation Type: ${operationType} already exists.`,
+                      errorType: "DuplicateEntry"
+                  }, 
+                  { status: 409 } // 409 Conflict is the standard HTTP response for this scenario
+              );
+          }
+          // Re-throw other errors
+          throw e; 
+      }
     } 
     
     // --- Decision Tree: REPORT (Priority 2) ---
+    // ... (rest of the report logic remains the same)
+    // --- Decision Tree: REPORT (Priority 2) ---
     else if (startDateRaw && endDateRaw) {
-      
-      // --- Report Validations ---
-      const start = new Date(startDateRaw);
-      
-      // Set 'end' to the day AFTER the requested end date
-      const end = new Date(endDateRaw);
-      end.setDate(end.getDate() + 1); 
+    
+    // --- Report Validations ---
+    const start = new Date(startDateRaw); // 'start' is defined here
+    
+    // Set 'end' to the day AFTER the requested end date
+    const end = new Date(endDateRaw); // 'end' is defined here
+    end.setDate(end.getDate() + 1); 
 
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
         return NextResponse.json({ message: "Invalid 'startDate' or 'endDate' value." }, { status: 400 });
-      }
-      
-      // Call the reporter function
-      const reportData = await getSewingReports({ start, end });
+    }
+    
+    // Call the reporter function
+    const reportData = await getSewingReports({ start, end }); // Squiggles here if this line is OUTSIDE the block
 
-      return NextResponse.json(reportData, { status: 200 });
-    } 
+    return NextResponse.json(reportData, { status: 200 });
+}
     
     // --- Decision Tree: INVALID REQUEST ---
     else {
