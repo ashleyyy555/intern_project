@@ -203,3 +203,59 @@ model OperationTime {
   D31         Int?
   updatedAt   DateTime @updatedAt
 }
+
+
+// enums
+enum ProcessType {
+  SEWING
+  INSPECTION_100
+}
+
+model EfficiencySewing {
+  id                        String   @id @default(uuid())
+  operationDate             DateTime @db.Date
+  processType               ProcessType @default(SEWING)
+
+  // Targets
+  m1_target_panel           Int?     // M1
+
+  // Normal time
+  m2_workers_normal         Int?     // M2
+  m3_operating_mins_normal  Decimal? @db.Decimal(10,2) // M3
+
+  // Overtime
+  m4_workers_ot             Int?     // M4
+  m5_operating_mins_ot      Decimal? @db.Decimal(10,2) // M5
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([operationDate]) // 1 row per day for Sewing
+  @@index([operationDate])
+}
+
+model EfficiencyInspection100 {
+  id                        String   @id @default(uuid())
+  operationDate             DateTime @db.Date
+  processType               ProcessType @default(INSPECTION_100)
+
+  m1_target_panel          Int?     // M1
+  m6_target_duffel         Int?     // M6
+  m7_target_blower         Int?     // M7
+
+  // Normal time
+  m2_workers_normal         Int?     // M2
+  m3_operating_mins_normal  Decimal? @db.Decimal(10,2) // M3
+
+  // Overtime
+  m4_workers_ot             Int?     // M4
+  m5_operating_mins_ot      Decimal? @db.Decimal(10,2) // M5
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([operationDate]) // 1 row per day for Inspection
+  @@index([operationDate])
+}
+
+

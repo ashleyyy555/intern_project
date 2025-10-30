@@ -22,6 +22,7 @@ const Sidebar = () => {
         <li className="nav-item"><a href="/main/100-percent">100% Inspection</a></li>
         <li className="nav-item"><a href="/main/packing">Packing</a></li>
         <li className="nav-item"><a href="/main/operating-time">Operating Time</a></li>
+        <li className="nav-item"><a href="/main/efficiency">Efficiency & Utilization</a></li>
       </ul>
 
       {/* Bottom Section (Pushed to the bottom) */}
