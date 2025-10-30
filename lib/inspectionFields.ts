@@ -241,29 +241,53 @@ export const OPERATION_HEADERS: Record<OperationKey, string> = {
     D31: "D31",
 };
 
-// ---- Efficiency: Sewing ----
-export const EFF_SEWING_INT_FIELDS = [
-  "m1_target_panel",
-  "m2_workers_normal",
-  "m4_workers_ot",
-] as const;
 
-export const EFF_SEWING_DEC_FIELDS = [
-  "m3_operating_mins_normal",
-  "m5_operating_mins_ot",
+// --- Efficiency: Sewing ---
+export const EFFICIENCY_SEWING_KEYS = [
+  "M1","M2","M3","M4","M5"
 ] as const;
+export type EfficiencySewingKey = (typeof EFFICIENCY_SEWING_KEYS)[number];
 
-// ---- Efficiency: 100% Inspection ----
-export const EFF_100_INT_FIELDS = [
-  "m1_target_panel",
-  "m6_target_duffel",
-  "m7_target_blower",
-  "m2_workers_normal",
-  "m4_workers_ot",
-] as const;
+export const EFFICIENCY_SEWING_FIELD_MAP: Record<EfficiencySewingKey, string> = {
+  M1: "m1_target_panel",
+  M2: "m2_workers_normal",
+  M3: "m3_operating_mins_normal",
+  M4: "m4_workers_ot",
+  M5: "m5_operating_mins_ot",
+};
 
-export const EFF_100_DEC_FIELDS = [
-  "m3_operating_mins_normal",
-  "m5_operating_mins_ot",
+export const EFFICIENCY_SEWING_HEADERS: Record<EfficiencySewingKey, string> = {
+  M1: "Target: Sewing One Panel",
+  M2: "No. of Workers (Normal)",
+  M3: "Operating Time (mins)",
+  M4: "No. of Workers (OT)",
+  M5: "Operating Time (mins) (OT)",
+};
+
+
+// --- Efficiency: 100% Inspection ---
+export const EFFICIENCY_INSPECTION100_KEYS = [
+  "M1","M6","M7","M2","M3","M4","M5"
 ] as const;
+export type EfficiencyInspection100Key = (typeof EFFICIENCY_INSPECTION100_KEYS)[number];
+
+export const EFFICIENCY_INSPECTION100_FIELD_MAP: Record<EfficiencyInspection100Key, string> = {
+  M1: "m1_target_panel",
+  M6: "m6_target_duffel",
+  M7: "m7_target_blower",
+  M2: "m2_workers_normal",
+  M3: "m3_operating_mins_normal",
+  M4: "m4_workers_ot",
+  M5: "m5_operating_mins_ot",
+};
+
+export const EFFICIENCY_INSPECTION100_HEADERS: Record<EfficiencyInspection100Key, string> = {
+  M1: "Top/Bottom Panel",
+  M6: "Duffel",
+  M7: "Blower",
+  M2: "No. of Workers (Normal)",
+  M3: "Operating Time (mins)",
+  M4: "No. of Workers (OT)",
+  M5: "Operating Time (mins) (OT)",
+};
 

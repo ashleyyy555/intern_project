@@ -8,7 +8,10 @@ import {
   INSPECTION_KEYS, INSPECTION_HEADERS, INSPECTION_FIELD_MAP,
   SEWING_KEYS, SEWING_HEADERS, SEWING_FIELD_MAP,
   OPERATION_KEYS, OPERATION_HEADERS, OPERATION_FIELD_MAP,
+  EFFICIENCY_SEWING_KEYS, EFFICIENCY_SEWING_HEADERS, EFFICIENCY_SEWING_FIELD_MAP,
+  EFFICIENCY_INSPECTION100_KEYS, EFFICIENCY_INSPECTION100_HEADERS, EFFICIENCY_INSPECTION100_FIELD_MAP,
 } from "@/lib/inspectionFields";
+
 
 import { fetchRecordById, updateRecord, deleteRecord } from "@/app/actions/records";
 
@@ -20,7 +23,10 @@ const sectionOptions = [
   { value: "100%", label: "100% Inspection" },
   { value: "packing", label: "Packing" },
   { value: "operationtime", label: "Operating Time" },
+  { value: "efficiency-sewing", label: "Efficiency - Sewing" },
+  { value: "efficiency-100", label: "Efficiency - 100% Inspection" },
 ];
+
 
 // Helper: today in YYYY-MM-DD
 const getCurrentDate = () => new Date().toISOString().split("T")[0];
@@ -31,22 +37,31 @@ const getKeysForSection = (section: string) => {
   if (section === "100%") return INSPECTION_KEYS;
   if (section === "sewing") return SEWING_KEYS;
   if (section === "operationtime") return OPERATION_KEYS;
+  if (section === "efficiency-sewing") return EFFICIENCY_SEWING_KEYS;
+  if (section === "efficiency-100") return EFFICIENCY_INSPECTION100_KEYS;
   return [] as string[];
 };
+
 const getHeadersForSection = (section: string) => {
   if (section === "packing") return PACKING_HEADERS;
   if (section === "100%") return INSPECTION_HEADERS;
   if (section === "sewing") return SEWING_HEADERS;
   if (section === "operationtime") return OPERATION_HEADERS;
+  if (section === "efficiency-sewing") return EFFICIENCY_SEWING_HEADERS;
+  if (section === "efficiency-100") return EFFICIENCY_INSPECTION100_HEADERS;
   return {} as Record<string, string>;
 };
+
 const getFieldMapForSection = (section: string) => {
   if (section === "packing") return PACKING_FIELD_MAP;
   if (section === "100%") return INSPECTION_FIELD_MAP;
   if (section === "sewing") return SEWING_FIELD_MAP;
   if (section === "operationtime") return OPERATION_FIELD_MAP;
+  if (section === "efficiency-sewing") return EFFICIENCY_SEWING_FIELD_MAP;
+  if (section === "efficiency-100") return EFFICIENCY_INSPECTION100_FIELD_MAP;
   return {} as Record<string, string>;
 };
+
 
 export default function SearchPage() {
   // filter state
@@ -147,6 +162,22 @@ export default function SearchPage() {
         ...operationHeaders
       ];
     }
+    if (sec === "efficiency-sewing") {
+  const effSewHeaders = EFFICIENCY_SEWING_KEYS.map((key) => ({
+    key,
+    label: EFFICIENCY_SEWING_HEADERS[key],
+  }));
+  return [{ key: "operationDate", label: "Date" }, ...effSewHeaders];
+}
+
+if (sec === "efficiency-100") {
+  const eff100Headers = EFFICIENCY_INSPECTION100_KEYS.map((key) => ({
+    key,
+    label: EFFICIENCY_INSPECTION100_HEADERS[key],
+  }));
+  return [{ key: "operationDate", label: "Date" }, ...eff100Headers];
+}
+
     // default (unused path)
     return [
       { key: "date", label: "Date" },
@@ -226,11 +257,28 @@ export default function SearchPage() {
         row[SEWING_FIELD_MAP.ST1], row[SEWING_FIELD_MAP.ST2],
       ];
     }
+    if (sec === "efficiency-sewing") {
+  return [
+    new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+    ...EFFICIENCY_SEWING_KEYS.map((k) => row[EFFICIENCY_SEWING_FIELD_MAP[k]]),
+  ];
+}
+
+if (sec === "efficiency-100") {
+  return [
+    new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M1],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M6],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M7],
+    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M2],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M3],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M4],
+    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M5],
+  ];
+}
+
     if (sec === "cutting") {
       return [date, row.StationID, row.quantityForIH, row.quantityForS, row.quantityForOS, row.quantityForB];
     }
     return [date, row.operator_id || "N/A", row.data_value || 0, row.section || "N/A"];
   };
+  
 
   const headers = getHeaders(currentSection);
   const finalHeaders = searchResults.length > 0
