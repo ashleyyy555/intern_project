@@ -10,6 +10,7 @@ const Sidebar = () => {
       <ul className="sidebar-section top-section">
         <li className="nav-item"><a href="/main">Dashboard</a></li>
         <li className="nav-item"><a href="/main/search">Search</a></li>
+        <li className="nav-item"><a href="/main/eff-dashboard">Efficiency Dashboard</a></li>
       </ul>
 
       {/* Separator */}
