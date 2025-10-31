@@ -98,29 +98,42 @@ const fetchPackingReport = async (startDateObj, endDateObj) => {
 };
 
 // --------------------------------------------------------------------------------
-// --- Table Component: CUTTING (Updated to show panelID) ---
+// --- Table Component: CUTTING (Updated to show panelID, including zero totals) ---
 // --------------------------------------------------------------------------------
+// NOTE: In a real app, ALL_PANEL_IDS should be fetched from an API or config.
+// Hardcoding a list for demonstration purposes.
+const ALL_PANEL_IDS = ["Circular Fabric", "Heavy Duty Fabric", "Light Duty Fabric", "Type 110", "Type 148",]; // Example list
+
 function CuttingTotalTable({ data }) {
   const TITLE = "Cutting Report";
 
-  if (!data || !data.panels || data.panels.length === 0) {
-    return (
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-center text-gray-500 italic">
-          No {TITLE} data available for this range.
-        </p>
-      </div>
-    );
-  }
-
-  // Aggregate by panelID instead of panelType
-  const panelsByID = data.panels.reduce((acc, p) => {
+  // 1. Aggregate data from the report (only includes IDs with > 0 pcs)
+  const panelsByIDFromData = (data?.panels || []).reduce((acc, p) => {
     const idLabel = p.panelId;
     acc[idLabel] = (acc[idLabel] || 0) + p.pcs;
     return acc;
   }, {});
 
-  const grandTotal = Object.values(panelsByID).reduce((a, b) => a + b, 0);
+  // 2. Combine the full list of ALL_PANEL_IDS with the aggregated data
+  const finalPanelsByID = ALL_PANEL_IDS.reduce((acc, panelId) => {
+    acc[panelId] = panelsByIDFromData[panelId] || 0; // Use 0 if not in fetched data
+    return acc;
+  }, {});
+
+  const dataKeys = Object.keys(finalPanelsByID);
+
+  if (!data || dataKeys.length === 0) {
+    return (
+      <div className="p-4 border-t border-gray-200">
+        <p className="text-center text-gray-500 italic">
+          No {TITLE} data or panel definitions available.
+        </p>
+      </div>
+    );
+  }
+
+  // Calculate Grand Total across all existing data (only if data.panels is not null/empty)
+  const grandTotal = (data?.panels || []).reduce((a, p) => a + p.pcs, 0);
 
   return (
     <>
@@ -144,17 +157,17 @@ function CuttingTotalTable({ data }) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {Object.entries(panelsByID).map(([panelId, pcs], index) => (
+            {dataKeys.map((panelId, index) => (
               <tr key={panelId} className="hover:bg-blue-50/50">
                 <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-800 align-middle border-r border-gray-300 w-1/4">
                   {panelId}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
-                  {pcs.toLocaleString()}
+                  {finalPanelsByID[panelId].toLocaleString()}
                 </td>
                 {index === 0 && (
                   <td
-                    rowSpan={Object.keys(panelsByID).length}
+                    rowSpan={dataKeys.length}
                     className="px-6 py-4 whitespace-nowrap text-3xl font-extrabold text-black text-right bg-white align-middle w-1/4"
                   >
                     <div className="text-xs font-medium uppercase mb-1">Overall Grand Total</div>
