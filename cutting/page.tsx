@@ -12,18 +12,18 @@ export default function CuttingPage() {
   // Date (YYYY-MM-DD), defaulting to today
   const [date, setDate] = useState(getTodayDate());
   
-  // State for the Panel ID (string)
+  // State for the Panel (dropdown)
   const [panelId, setPanelId] = useState("");
   
-  // New state for Panel Type, defaulting to Laminated
+  // State for Panel Type
   const [panelType, setPanelType] = useState("Laminated"); 
   
-  // States for the measurement fields (stored as strings to manage input control)
+  // States for the measurement fields
   const [construction, setConstruction] = useState("");
   const [denier, setDenier] = useState("");
   const [weight, setWeight] = useState("");
   
-  // New states for size and output fields
+  // States for size and output fields
   const [widthSize, setWidthSize] = useState("");
   const [lengthSize, setLengthSize] = useState("");
   const [actualOutput, setActualOutput] = useState("");
@@ -31,18 +31,17 @@ export default function CuttingPage() {
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Styles (Matching Inspection file's styling conventions)
+  // Styles
   const baseInputStyleCentered =
     "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-center";
   
-  // Style for non-centered inputs (Date, Panel ID, Type)
   const baseInputStyleLeft =
     "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500";
   
   const resetForm = () => {
     setDate(getTodayDate());
     setPanelId("");
-    setPanelType("Laminated"); // Reset to default
+    setPanelType("Laminated");
     setConstruction("");
     setDenier("");
     setWeight("");
@@ -51,15 +50,12 @@ export default function CuttingPage() {
     setActualOutput("");
   };
   
-  // Handler for float inputs: allows only numbers and a single decimal point
   const handleFloatChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setState: React.Dispatch<React.SetStateAction<string>>
   ) => {
     let { value } = e.target;
-    // 1. Remove non-digit/non-decimal characters
     value = value.replace(/[^0-9.]/g, "");
-    // 2. Ensure only one decimal point
     const parts = value.split('.');
     if (parts.length > 2) {
       value = parts[0] + '.' + parts.slice(1).join('');
@@ -67,24 +63,21 @@ export default function CuttingPage() {
     setState(value);
   };
 
-  // Handler for integer inputs: allows only whole numbers
   const handleIntegerChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setState: React.Dispatch<React.SetStateAction<string>>
   ) => {
     const { value } = e.target;
-    // Allow only digits (0-9)
     const integerValue = value.replace(/[^0-9]/g, "");
     setState(integerValue);
   };
 
   const handleSave = async () => {
     if (!date || !panelId.trim()) {
-        setStatusMessage({ type: "error", message: "Date and Panel ID are required fields." });
+        setStatusMessage({ type: "error", message: "Date and Panel are required fields." });
         setTimeout(() => setStatusMessage(null), 3000);
         return;
     }
-    // Check that all measurement fields are non-empty
     if (!construction || !denier || !weight || !widthSize || !lengthSize || !actualOutput) {
         setStatusMessage({ type: "error", message: "Please fill in all cutting measurement fields." });
         setTimeout(() => setStatusMessage(null), 3000);
@@ -94,24 +87,21 @@ export default function CuttingPage() {
     setStatusMessage(null);
     setSaving(true);
     
-    // API call to save data
     try {
-      // Data to save, parsing the string values to their final numeric types
       const dataToSave = {
         date,
         panelId,
-        panelType, // Include new field
+        panelType,
         construction: parseFloat(construction),
         denier: parseFloat(denier),
         weight: parseFloat(weight),
         widthSize: parseFloat(widthSize),
         lengthSize: parseFloat(lengthSize),
-        actualOutput: parseInt(actualOutput, 10), // Parse to integer
+        actualOutput: parseInt(actualOutput, 10),
       };
 
       console.log("Saving cutting data:", dataToSave); 
       
-      // NOTE: Using a mock endpoint and payload. Replace with real API logic.
       const res = await fetch("/api/cutting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,10 +148,9 @@ export default function CuttingPage() {
         </div>
       )}
 
-      {/* Main card container matching the Inspection style */}
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 space-y-6">
         
-        {/* 1. Date Input (with line below it) */}
+        {/* Date Input */}
         <div className="pb-4 border-b border-gray-200"> 
           <div className="flex items-center space-x-3 max-w-sm">
             <label htmlFor="date" className="text-lg font-semibold whitespace-nowrap">
@@ -177,21 +166,26 @@ export default function CuttingPage() {
           </div>
         </div>
 
-        {/* 2. Panel ID and Type Inputs - Side-by-side */}
+        {/* Panel and Type Inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4"> 
-            {/* Panel ID */}
+            {/* Panel Dropdown */}
             <div className="flex items-center space-x-3">
                 <label htmlFor="panelId" className="text-lg font-semibold whitespace-nowrap">
-                Panel ID:
+                Panel:
                 </label>
-                <input
-                id="panelId"
-                type="text"
-                placeholder="Enter Panel ID"
-                value={panelId}
-                onChange={(e) => setPanelId(e.target.value)}
-                className={baseInputStyleLeft}
-                />
+                <select
+                    id="panelId"
+                    value={panelId}
+                    onChange={(e) => setPanelId(e.target.value)}
+                    className={`${baseInputStyleLeft} appearance-none`}
+                >
+                    <option value="">Select Panel</option>
+                    <option value="Heavy Duty Fabric">Heavy Duty Fabric</option>
+                    <option value="Light Duty Fabric">Light Duty Fabric</option>
+                    <option value="Circular Fabric">Circular Fabric</option>
+                    <option value="Type 110">Type 110</option>
+                    <option value="Type 148">Type 148</option>
+                </select>
             </div>
             
             {/* Type Dropdown */}
@@ -211,19 +205,15 @@ export default function CuttingPage() {
             </div>
         </div>
 
-        {/* 3. Cutting Measurements Section - Row 1 */}
+        {/* Cutting Measurements Row 1 */}
         <div className="mb-4 pt-4"> 
-          {/* New 3-column grid for measurements (Tape/Inch, Denier, Weigh) */}
           <div className="grid grid-cols-3 gap-4">
-            
-            {/* Construction (Tape/Inch) */}
             <div className="space-y-1">
               <label htmlFor="construction" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Construction (Tape/Inch):
               </label>
               <input
                 id="construction"
-                name="construction"
                 type="text"
                 placeholder="0.00"
                 value={construction}
@@ -232,14 +222,12 @@ export default function CuttingPage() {
               />
             </div>
 
-            {/* Denier */}
             <div className="space-y-1">
               <label htmlFor="denier" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Denier:
               </label>
               <input
                 id="denier"
-                name="denier"
                 type="text"
                 placeholder="0.00"
                 value={denier}
@@ -248,14 +236,12 @@ export default function CuttingPage() {
               />
             </div>
 
-            {/* Weigh (g/m2) */}
             <div className="space-y-1">
               <label htmlFor="weight" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Weigh (g/m²):
               </label>
               <input
                 id="weight"
-                name="weight"
                 type="text"
                 placeholder="0.00"
                 value={weight}
@@ -266,19 +252,15 @@ export default function CuttingPage() {
           </div>
         </div>
         
-        {/* 4. Cutting Measurements Section - Row 2 (New Fields) */}
+        {/* Cutting Measurements Row 2 */}
         <div className="mb-4">
-          {/* New 3-column grid for sizes and output */}
           <div className="grid grid-cols-3 gap-4">
-            
-            {/* Width Size (inch) - Float */}
             <div className="space-y-1">
               <label htmlFor="widthSize" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Width Size (inch):
               </label>
               <input
                 id="widthSize"
-                name="widthSize"
                 type="text"
                 placeholder="0.00"
                 value={widthSize}
@@ -287,14 +269,12 @@ export default function CuttingPage() {
               />
             </div>
 
-            {/* Length Size (inch) - Float */}
             <div className="space-y-1">
               <label htmlFor="lengthSize" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Length Size (inch):
               </label>
               <input
                 id="lengthSize"
-                name="lengthSize"
                 type="text"
                 placeholder="0.00"
                 value={lengthSize}
@@ -303,14 +283,12 @@ export default function CuttingPage() {
               />
             </div>
 
-            {/* Actual Output (pcs) - Integer */}
             <div className="space-y-1">
               <label htmlFor="actualOutput" className="block text-xs font-bold text-gray-500 text-center font-bold">
                 Actual Output (pcs):
               </label>
               <input
                 id="actualOutput"
-                name="actualOutput"
                 type="text"
                 placeholder="0"
                 value={actualOutput}
@@ -321,8 +299,7 @@ export default function CuttingPage() {
           </div>
         </div>
 
-
-        {/* 5. Save Button (at the bottom) */}
+        {/* Save Button */}
         <div className="flex justify-end pt-4 border-t border-gray-200">
           <button
             onClick={handleSave}
