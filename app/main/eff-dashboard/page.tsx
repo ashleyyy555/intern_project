@@ -79,7 +79,6 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
 
   const hasData = metrics.some(m => m.ratedOutput > 0);
 
-  if (!hasData) return null;
 
   return (
     <>
@@ -185,7 +184,6 @@ function OperatingTimeSummaryTable({ rawReportData }) { // Removed ratedOperatin
 
   const hasData = metrics.some(m => m.actualTime > 0 || m.ratedTime > 0);
   
-  if (!hasData) return null;
 
   return (
     <div className="mt-8">
