@@ -10,6 +10,8 @@ import {
   OPERATION_KEYS, OPERATION_HEADERS, OPERATION_FIELD_MAP,
   EFFICIENCY_SEWING_KEYS, EFFICIENCY_SEWING_HEADERS, EFFICIENCY_SEWING_FIELD_MAP,
   EFFICIENCY_INSPECTION100_KEYS, EFFICIENCY_INSPECTION100_HEADERS, EFFICIENCY_INSPECTION100_FIELD_MAP,
+  // NEW: Include Cutting fields from inspectionFields.ts
+  CUTTING_KEYS, CUTTING_HEADERS, CUTTING_FIELD_MAP, 
 } from "@/lib/inspectionFields";
 
 
@@ -33,6 +35,7 @@ const getCurrentDate = () => new Date().toISOString().split("T")[0];
 
 // ---- helpers to reuse your maps (for edit modal) ----
 const getKeysForSection = (section: string) => {
+  if (section === "cutting") return CUTTING_KEYS; // ADDED
   if (section === "packing") return PACKING_KEYS;
   if (section === "100%") return INSPECTION_KEYS;
   if (section === "sewing") return SEWING_KEYS;
@@ -43,6 +46,7 @@ const getKeysForSection = (section: string) => {
 };
 
 const getHeadersForSection = (section: string) => {
+  if (section === "cutting") return CUTTING_HEADERS; // ADDED
   if (section === "packing") return PACKING_HEADERS;
   if (section === "100%") return INSPECTION_HEADERS;
   if (section === "sewing") return SEWING_HEADERS;
@@ -53,6 +57,7 @@ const getHeadersForSection = (section: string) => {
 };
 
 const getFieldMapForSection = (section: string) => {
+  if (section === "cutting") return CUTTING_FIELD_MAP; // ADDED
   if (section === "packing") return PACKING_FIELD_MAP;
   if (section === "100%") return INSPECTION_FIELD_MAP;
   if (section === "sewing") return SEWING_FIELD_MAP;
@@ -120,10 +125,21 @@ export default function SearchPage() {
     const dateHeader =
       sec === "operationtime"
         ? { key: "yearMonth", label: "Month/Year" }
+        // For all others, we check for the specific date key
         : { key: "operationDate", label: "Date" };
 
-    const operationTypeHeader = { key: "operationType", label: "Operation Type" }; // New Header
+    const operationTypeHeader = { key: "operationType", label: "Operation Type" }; 
 
+    if (sec === "cutting") { // ADDED CUTTING LOGIC
+        const cuttingHeaders = CUTTING_KEYS.map((key) => ({
+            key,
+            label: CUTTING_HEADERS[key],
+        }));
+        // Cutting data uses 'entry_date' if 'operationDate' is not used
+        const cuttingDateHeader = { key: "entry_date", label: "Date" }; 
+        return [cuttingDateHeader, ...cuttingHeaders];
+    }
+    
     if (sec === "packing") {
       const packingHeaders = PACKING_KEYS.map((key) => ({
         key,
@@ -163,20 +179,20 @@ export default function SearchPage() {
       ];
     }
     if (sec === "efficiency-sewing") {
-  const effSewHeaders = EFFICIENCY_SEWING_KEYS.map((key) => ({
-    key,
-    label: EFFICIENCY_SEWING_HEADERS[key],
-  }));
-  return [{ key: "operationDate", label: "Date" }, ...effSewHeaders];
-}
+      const effSewHeaders = EFFICIENCY_SEWING_KEYS.map((key) => ({
+        key,
+        label: EFFICIENCY_SEWING_HEADERS[key],
+      }));
+      return [{ key: "operationDate", label: "Date" }, ...effSewHeaders];
+    }
 
-if (sec === "efficiency-100") {
-  const eff100Headers = EFFICIENCY_INSPECTION100_KEYS.map((key) => ({
-    key,
-    label: EFFICIENCY_INSPECTION100_HEADERS[key],
-  }));
-  return [{ key: "operationDate", label: "Date" }, ...eff100Headers];
-}
+    if (sec === "efficiency-100") {
+      const eff100Headers = EFFICIENCY_INSPECTION100_KEYS.map((key) => ({
+        key,
+        label: EFFICIENCY_INSPECTION100_HEADERS[key],
+      }));
+      return [{ key: "operationDate", label: "Date" }, ...eff100Headers];
+    }
 
     // default (unused path)
     return [
@@ -195,7 +211,19 @@ if (sec === "efficiency-100") {
     if (sec === "operationtime") {
       date = row.yearMonth || "N/A";
     } else {
+      // Use 'operationDate' or 'entry_date' for Cutting/default date column
       date = new Date(row.operationDate || row.entry_date).toLocaleDateString() || "N/A";
+    }
+    
+    if (sec === "cutting") { // ADDED CUTTING LOGIC
+      const map = CUTTING_FIELD_MAP;
+      return [
+        date,
+        row[map.C1], row[map.C2], 
+        row[map.C3], row[map.C4], row[map.C5], 
+        row[map.C6], row[map.C7], 
+        row[map.C8],
+      ];
     }
 
     if (sec === "packing") {
@@ -258,24 +286,21 @@ if (sec === "efficiency-100") {
       ];
     }
     if (sec === "efficiency-sewing") {
-  return [
-    new Date(row.operationDate || row.entry_date).toLocaleDateString(),
-    ...EFFICIENCY_SEWING_KEYS.map((k) => row[EFFICIENCY_SEWING_FIELD_MAP[k]]),
-  ];
-}
-
-if (sec === "efficiency-100") {
-  return [
-    new Date(row.operationDate || row.entry_date).toLocaleDateString(),
-    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M1],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M6],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M7],
-    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M2],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M3],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M4],
-    row[EFFICIENCY_INSPECTION100_FIELD_MAP.M5],
-  ];
-}
-
-    if (sec === "cutting") {
-      return [date, row.StationID, row.quantityForIH, row.quantityForS, row.quantityForOS, row.quantityForB];
+      return [
+        new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+        ...EFFICIENCY_SEWING_KEYS.map((k) => row[EFFICIENCY_SEWING_FIELD_MAP[k]]),
+      ];
     }
+
+    if (sec === "efficiency-100") {
+      return [
+        new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+        row[EFFICIENCY_INSPECTION100_FIELD_MAP.M1],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M6],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M7],
+        row[EFFICIENCY_INSPECTION100_FIELD_MAP.M2],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M3],row[EFFICIENCY_INSPECTION100_FIELD_MAP.M4],
+        row[EFFICIENCY_INSPECTION100_FIELD_MAP.M5],
+      ];
+    }
+    
     return [date, row.operator_id || "N/A", row.data_value || 0, row.section || "N/A"];
   };
   
@@ -318,6 +343,8 @@ if (sec === "efficiency-100") {
     }
   };
 
+  // The edit modal relies on `getFieldMapForSection` which now includes cutting
+  // numericCols is used to determine input type (number or text) in the modal
   const numericCols = new Set(Object.values(getFieldMapForSection(editSection)));
 
   return (
@@ -480,23 +507,7 @@ if (sec === "efficiency-100") {
 
             {/* Date / Period */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {editSection !== "operationtime" ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Operation Date</label>
-                  <input
-                    type="date"
-                    value={
-                      editData?.operationDate
-                        ? new Date(editData.operationDate).toISOString().slice(0, 10)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setEditData((d: any) => ({ ...d, operationDate: e.target.value }))
-                    }
-                    className="w-full p-2 border rounded-lg"
-                  />
-                </div>
-              ) : (
+              {editSection === "operationtime" ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Month/Year (YYYY-MM)
@@ -506,6 +517,24 @@ if (sec === "efficiency-100") {
                     value={editData?.yearMonth || ""}
                     onChange={(e) =>
                       setEditData((d: any) => ({ ...d, yearMonth: e.target.value }))
+                    }
+                    className="w-full p-2 border rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Operation Date</label>
+                  <input
+                    type="date"
+                    value={
+                      editData?.operationDate
+                        ? new Date(editData.operationDate).toISOString().slice(0, 10)
+                        : editData?.entry_date // Fallback for cutting/other models using entry_date
+                        ? new Date(editData.entry_date).toISOString().slice(0, 10)
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setEditData((d: any) => ({ ...d, operationDate: e.target.value }))
                     }
                     className="w-full p-2 border rounded-lg"
                   />
@@ -534,49 +563,7 @@ if (sec === "efficiency-100") {
                   </div>
                 </>
               )}
-            </div>
-
-            {/* Dynamic fields */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto border rounded p-3">
-              {(() => {
-                const keys = getKeysForSection(editSection);
-                const labels = getHeadersForSection(editSection);
-                const map = getFieldMapForSection(editSection);
-
-                // Add an input for operationType if applicable
-                if (editSection === "100%" || editSection === "sewing") {
-                    // This is a custom input outside of the dynamic keys loop
-                    // but you might also want to include it in the editData
-                }
-
-                return keys.map((k) => {
-                  const col = (map as any)[k]; // actual DB column name
-                  const text = (labels as any)[k] || k;
-                  const val = editData?.[col] ?? "";
-
-                  const numericCols = new Set<string>(Object.values(map));
-
-                  return (
-                    <div key={k} className="flex flex-col">
-                      <label className="text-xs text-gray-600 mb-1">{text}</label>
-                      <input
-                        type={numericCols.has(col) ? "number" : "text"}
-                        value={val ?? ""}
-                        onChange={(e) =>
-                            setEditData((d: any) => ({
-                                ...d,
-                                [col]:
-                                    numericCols.has(col) && e.target.value !== ""
-                                        ? Number(e.target.value)
-                                        : e.target.value,
-                            }))
-                        }
-                        className="p-2 border rounded"
-                      />
-                    </div>
-                  );
-                });
-              })()}
+              
             </div>
             
             {/* Added operationType input field to the Edit Modal for Sewing/100% */}
@@ -594,6 +581,43 @@ if (sec === "efficiency-100") {
                     />
                 </div>
             )}
+            
+            {/* Dynamic fields */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 max-h-[50vh] overflow-y-auto border rounded p-3">
+              {(() => {
+                const keys = getKeysForSection(editSection);
+                const labels = getHeadersForSection(editSection);
+                const map = getFieldMapForSection(editSection);
+
+                return keys.map((k) => {
+                  const col = (map as any)[k]; // actual DB column name
+                  const text = (labels as any)[k] || k;
+                  const val = editData?.[col] ?? "";
+
+                  return (
+                    <div key={k} className="flex flex-col">
+                      <label className="text-xs text-gray-600 mb-1">{text}</label>
+                      <input
+                        // Use numericCols set derived from getFieldMapForSection
+                        type={numericCols.has(col) ? "number" : "text"} 
+                        value={val ?? ""}
+                        onChange={(e) =>
+                            setEditData((d: any) => ({
+                                ...d,
+                                [col]:
+                                    numericCols.has(col) && e.target.value !== ""
+                                        ? Number(e.target.value) // Convert to number for numeric columns
+                                        : e.target.value,
+                            }))
+                        }
+                        className="p-2 border rounded"
+                      />
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            
 
 
             {/* Save */}
@@ -610,7 +634,7 @@ if (sec === "efficiency-100") {
                   const res = await updateRecord({
                     section: editSection,
                     id: editId,
-                    data: editData, // includes updatedAt if you added it
+                    data: editData, 
                   });
                   if ((res as any)?.error) {
                     setErrorMessage((res as any).error);

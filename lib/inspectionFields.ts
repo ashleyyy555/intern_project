@@ -1,5 +1,34 @@
 // lib/inspectionFields.ts
 
+// --- Cutting Data (cutting) ---
+export const CUTTING_KEYS = [
+    "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8" 
+] as const;
+export type CuttingKey = (typeof CUTTING_KEYS)[number];
+
+// These map the client-side key to the Prisma column name (based on cutting.tsx)
+export const CUTTING_FIELD_MAP: Record<CuttingKey, string> = {
+    C1: "panelId",       
+    C2: "panelType",     
+    C3: "construction",  
+    C4: "denier",        
+    C5: "weight",        
+    C6: "widthSize",     
+    C7: "lengthSize",    
+    C8: "actualOutput",  
+};
+
+export const CUTTING_HEADERS: Record<CuttingKey, string> = {
+    C1: "Panel",
+    C2: "Type",
+    C3: "Construction",
+    C4: "Denier",
+    C5: "Weight (g/m²)",
+    C6: "Width (inch)",
+    C7: "Length (inch)",
+    C8: "Actual Output (pcs)",
+};
+
 // --- Packing Data ---
 export const PACKING_KEYS = [
     "P1", "P2", "P3", "P4", 
