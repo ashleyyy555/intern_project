@@ -321,7 +321,7 @@ if (sec === "efficiency-100") {
   const numericCols = new Set(Object.values(getFieldMapForSection(editSection)));
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 font-['Inter']">
+    <div className="space-y-6 max-w-6xl mx-auto p-4">
       <h1 className="text-3xl font-extrabold text-gray-900">Data Search</h1>
 
       {/* Filters */}
