@@ -21,14 +21,20 @@ type CuttingBody = {
 const json = (d: any, status = 200) => NextResponse.json(d, { status });
 
 function parseYYYYMMDD(s: string): Date | null {
-  // Strict YYYY-MM-DD
-  const m = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(s);
+  // *** CRITICAL FIX: Trim the input string immediately before regex check ***
+  const cleanedString = s.trim(); 
+  
+  // Strict YYYY-MM-DD regex check
+  const m = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(cleanedString);
   if (!m) return null;
+  
   const y = Number(m[1]);
   const mo = Number(m[2]);
   const d = Number(m[3]);
+  
   // Use UTC midnight so it maps cleanly to @db.Date
   const dt = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0, 0));
+  
   // Guard overflow dates (e.g., 2025-02-31)
   if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {
     return null;
@@ -59,7 +65,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Required: date, panelId, panelType, all measurements
     const dateStr = String(body?.date ?? "").trim();
-    const date = parseYYYYMMDD(dateStr);
+    // This call now uses the fixed parseYYYYMMDD
+    const date = parseYYYYMMDD(dateStr); 
     if (!date) return json({ message: "Field 'date' must be in YYYY-MM-DD and valid." }, 400);
 
     const panelId = String(body?.panelId ?? "").trim();

@@ -92,13 +92,13 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
               <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 w-1/4">
                 Production Phase
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider w-32">
                 Rated Output
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider w-32">
                 Actual Output (Input)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider bg-blue-700">
+              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider w-32 bg-blue-700">
                 Efficiency (%)
               </th>
             </tr>
@@ -197,13 +197,13 @@ function OperatingTimeSummaryTable({ rawReportData }) { // Removed ratedOperatin
               <th className="px-6 py-3 text-left text-xs font-bold text-purple-700 uppercase tracking-wider border-r border-gray-300 w-1/4">
                 Production Phase
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider w-32">
                 Rated Operating Time (Theoretical)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider w-32">
                 Actual Operating Time
               </th>
-              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider bg-purple-700">
+              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider w-32 bg-purple-700">
                 Utilization (%)
               </th>
             </tr>
