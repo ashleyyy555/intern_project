@@ -59,16 +59,42 @@ model User {
   sessions Session[]
 }
 
-model Cutting {
-  id            String   @id @default(cuid())
-  operationDate DateTime @default(now())
-  StationID     Int?
-  quantityForIH Int?
-  quantityForS  Int?
-  quantityForOS Int?
-  quantityForB  Int?
-  updatedAt     DateTime @updatedAt
+// prisma/schema.prisma
+
+enum PanelType {
+  Laminated
+  Unlaminated
 }
+
+model Cutting {
+  id             String   @id @default(cuid())
+
+  /// Operation date (stored as DATE, no time)
+  operationDate  DateTime @db.Date
+
+  /// Dropdown selection in your UI
+  panelId        String   // e.g., "Heavy Duty Fabric", "Type 148"
+
+  /// "Laminated" | "Unlaminated"
+  panelType      PanelType
+
+  /// Measurement fields (allow decimals)
+  construction   Float     // Tape/Inch
+  denier         Float
+  weight         Float     // g/m²
+  widthSize      Float     // inch
+  lengthSize     Float     // inch
+
+  /// Pcs (integer only)
+  actualOutput   Int
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Helpful for date-range queries
+  @@index([operationDate])
+}
+
 
 model Sewing {
   id            String   @id @default(cuid())
