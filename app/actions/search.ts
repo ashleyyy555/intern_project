@@ -8,18 +8,14 @@ import {
   INSPECTION_FIELD_MAP,
   SEWING_FIELD_MAP,
   OPERATION_FIELD_MAP,
-  PACKING_KEYS,
-  INSPECTION_KEYS,
-  SEWING_KEYS,
-  OPERATION_KEYS,
   CUTTING_FIELD_MAP
-} from '@/lib/inspectionFields';
+} from '@/lib/inspectionFields'; // Assuming these mappings are defined here
 
 // ----------------------------------------
 // 1. Update SECTION_IDENTIFIER to include Cutting
 // ----------------------------------------
 const SECTION_IDENTIFIER: { [key: string]: string } = {
-  cutting: 'Cutting', // <--- ADDED
+  cutting: 'Cutting',
   sewing: 'Sewing',
   '100%': 'Inspection',
   packing: 'Packing',
@@ -53,16 +49,39 @@ export async function searchData(formData: {
   const { startDate, endDate, section } = result.data;
   const targetModel = SECTION_IDENTIFIER[section || ''];
 
-  if (section === 'all') {
-    return { error: 'Please select a specific section for the search.' };
+  // --- Date Validation & Filtering ---
+  
+  if (startDate && isNaN(new Date(startDate).getTime())) {
+      return { error: 'Invalid Start Date format. Must be YYYY-MM-DD.' };
   }
-
-  // Common date filter logic
+  if (endDate && isNaN(new Date(endDate).getTime())) {
+      return { error: 'Invalid End Date format. Must be YYYY-MM-DD.' };
+  }
+  
   const dateWhereClause: any = {};
   if (startDate && endDate) {
-    const endOfDay = new Date(endDate);
-    endOfDay.setDate(endOfDay.getDate() + 1);
+    // 1. Start Date (inclusive)
+    // Create Date object from the YYYY-MM-DD string and set to midnight UTC
+    const start = new Date(startDate);
+    start.setUTCHours(0, 0, 0, 0); 
+
+    // 2. End Date (inclusive, but using LT operator)
+    // Create Date object from the YYYY-MM-DD string
+    const end = new Date(endDate);
+    // Set to midnight of the NEXT day for an exclusive 'lt' (less than) filter
+    end.setUTCDate(end.getUTCDate() + 1); 
+    end.setUTCHours(0, 0, 0, 0); 
     
+    dateWhereClause.operationDate = {
+      gte: start, // >= start date
+      lt: end,    // < day after end date
+    };
+  }
+
+  // --- Section Logic ---
+
+  if (section === 'all') {
+    return { error: 'Please select a specific section for the search.' };
   }
 
   // ----------------------------------------
@@ -74,14 +93,12 @@ export async function searchData(formData: {
         where: dateWhereClause,
         orderBy: { operationDate: 'desc' }, 
       });
-      // The section string must match the client-side value
       return { data: results, section: 'cutting', fieldMap: CUTTING_FIELD_MAP }; 
     } catch (error) {
       console.error('Prisma Cutting query failed:', error);
       return { error: 'Failed to retrieve Cutting data.' };
     }
   }
-
 
   // ----------------------------------------
   // 1. Inspection (100%)
@@ -135,7 +152,8 @@ export async function searchData(formData: {
     // Operation Time uses yearMonth, so dateWhereClause is ignored, and a new clause is built
     const operationTimeWhereClause: any = {};
     if (startDate) {
-      operationTimeWhereClause.yearMonth = startDate.substring(0, 7);
+      // Operation Time only uses YYYY-MM
+      operationTimeWhereClause.yearMonth = startDate.substring(0, 7); 
     }
     try {
       const results = await prisma.operationTime.findMany({

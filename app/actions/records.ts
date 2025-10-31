@@ -1,22 +1,52 @@
-// app/actions/records.ts
 'use server';
 
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
-// Import your field maps so we know which columns are numeric Int?
+// Import your field maps so we know which columns are numeric
 import {
   PACKING_FIELD_MAP,
   INSPECTION_FIELD_MAP,
   SEWING_FIELD_MAP,
   OPERATION_FIELD_MAP,
 
-  // NEW: efficiency field maps (from your lib)
+  // Efficiency field maps (from your lib)
   EFFICIENCY_SEWING_FIELD_MAP,
   EFFICIENCY_INSPECTION100_FIELD_MAP,
+
+  // Cutting field map
+  CUTTING_FIELD_MAP,
 } from '@/lib/inspectionFields';
 
 type ModelKey = keyof typeof prisma;
+
+/** Canonical options used in create UI — enforce on update too (KEEP IN SYNC WITH UI) */
+const PANEL_ID_OPTIONS = [
+  'Heavy Duty Fabric',
+  'Light Duty Fabric',
+  'Circular Fabric',
+  'Type 110',
+  'Type 148',
+] as const;
+
+const PANEL_TYPE_OPTIONS = ['Laminated', 'Unlaminated'] as const;
+
+/** NEW: dropdowns for sewing / 100% inspection operationType, and operationtime SectionType */
+const SEWING_OPERATION_TYPES = [
+  'SP1','SP2','PC','SB','SPP','SS','SSP','SD','ST',
+] as const;
+
+const INSPECTION_OPERATION_TYPES = [
+  'In house',            // adjust to your canonical spelling if needed (e.g., 'in-house')
+  'Semi',
+  'Complete wt 100%',
+  'Complete wo 100%',
+] as const;
+
+const SECTION_TYPE_OPTIONS = [
+  'Sewing',
+  '100% Inspection',
+] as const;
 
 /**
  * Section keys aligned with app/actions/search.ts
@@ -27,12 +57,23 @@ const SECTION: Record<string, { model: ModelKey; idKey: string; dateKey?: 'opera
   sewing:              { model: 'sewing',                   idKey: 'id', dateKey: 'operationDate' },
   operationtime:       { model: 'operationTime',            idKey: 'id', dateKey: 'yearMonth' },
 
+  // Cutting table
+  cutting:             { model: 'cutting',                  idKey: 'id', dateKey: 'operationDate' },
+
   // Efficiency tables
   'efficiency-sewing': { model: 'efficiencySewing',         idKey: 'id', dateKey: 'operationDate' },
   'efficiency-100':    { model: 'efficiencyInspection100',  idKey: 'id', dateKey: 'operationDate' },
 };
 
-const SECTION_ENUM = z.enum(['packing','100%','sewing','operationtime','efficiency-sewing','efficiency-100']);
+const SECTION_ENUM = z.enum([
+  'packing',
+  '100%',
+  'sewing',
+  'operationtime',
+  'cutting',
+  'efficiency-sewing',
+  'efficiency-100',
+]);
 
 const FetchSchema  = z.object({ section: SECTION_ENUM, id: z.string().min(1) });
 
@@ -47,10 +88,29 @@ const UpdateSchema = z.object({
 const DeleteSchema = FetchSchema;
 
 /**
- * Build per-section sets of Int? and Decimal? columns.
- * Based on your Prisma schema:
- *  - Efficiency(Sewing): m1,m2,m4 are Int? ; m3,m5 are Decimal?
- *  - Efficiency(100%):   m1,m6,m7,m2,m4 are Int? ; m3,m5 are Decimal?
+ * Build per-section sets of Int?/Float?/Decimal? columns.
+ * - Cutting:
+ * • Int?    : actualOutput
+ * • Float?  : construction, denier, weight, widthSize, lengthSize
+ * - Existing efficiency tables use Decimal? for "operating minutes" to preserve precision.
+ */
+
+// ---- Cutting: column sets ----
+const CUTTING_INT_COLS = new Set<string>([
+  CUTTING_FIELD_MAP.C8, // actualOutput (Int)
+]);
+
+const CUTTING_FLOAT_COLS = new Set<string>([
+  CUTTING_FIELD_MAP.C3, // construction (Float)
+  CUTTING_FIELD_MAP.C4, // denier (Float)
+  CUTTING_FIELD_MAP.C5, // weight (Float)
+  CUTTING_FIELD_MAP.C6, // widthSize (Float)
+  CUTTING_FIELD_MAP.C7, // lengthSize (Float)
+]);
+
+/**
+ * Efficiency(Sewing): m1,m2,m4 are Int? ; m3,m5 are Decimal?
+ * Efficiency(100%):   m1,m6,m7,m2,m4 are Int? ; m3,m5 are Decimal?
  */
 const EFF_SEWING_INT_COLS = new Set<string>([
   EFFICIENCY_SEWING_FIELD_MAP.M1, // m1_target_panel
@@ -74,16 +134,24 @@ const EFF_100_DEC_COLS = new Set<string>([
   EFFICIENCY_INSPECTION100_FIELD_MAP.M5, // m5_operating_mins_ot
 ]);
 
-// ---- Numeric (Int?) columns per section ----
-const NUMERIC_COLS: Record<string, Set<string>> = {
+// ---- Int? columns per section ----
+const INT_COLS: Record<string, Set<string>> = {
   packing:             new Set(Object.values(PACKING_FIELD_MAP)),
   '100%':              new Set(Object.values(INSPECTION_FIELD_MAP)),
   sewing:              new Set(Object.values(SEWING_FIELD_MAP)),
   operationtime:       new Set(Object.values(OPERATION_FIELD_MAP)),
 
+  // Cutting: only actualOutput is Int
+  cutting:             CUTTING_INT_COLS,
+
   // Efficiency Int? fields
   'efficiency-sewing': EFF_SEWING_INT_COLS,
   'efficiency-100':    EFF_100_INT_COLS,
+};
+
+// ---- Float? columns per section ----
+const FLOAT_COLS: Record<string, Set<string>> = {
+  cutting: CUTTING_FLOAT_COLS,
 };
 
 // ---- Decimal? columns per section (efficiency only) ----
@@ -138,23 +206,85 @@ export async function updateRecord(input: unknown) {
     }
   }
 
-  // Coerce Int? columns
-  const intCols = NUMERIC_COLS[section] ?? new Set<string>();
+  // --------------------------------------------------------------------------
+  // Cutting-only validations for dropdown fields (Server-side safety net)
+  // Ensure PanelType and PanelId match canonical allowed values.
+  // --------------------------------------------------------------------------
+  if (section === 'cutting') {
+    if (cleaned.panelType != null) {
+      const ok = PANEL_TYPE_OPTIONS.includes(String(cleaned.panelType) as any);
+      if (!ok) {
+        return {
+          error: `Invalid panelType: "${cleaned.panelType}". Must be one of: ${PANEL_TYPE_OPTIONS.join(' or ')}.`
+        };
+      }
+    }
+    if (cleaned.panelId != null) {
+      const ok = PANEL_ID_OPTIONS.includes(String(cleaned.panelId) as any);
+      if (!ok) {
+        // Enhanced error message to explicitly list options
+        return {
+          error: `Invalid panelId: "${cleaned.panelId}". Must be one of: ${PANEL_ID_OPTIONS.join(', ')}.`
+        };
+      }
+    }
+  }
+
+  // --- Sewing / 100% Inspection: restrict operationType to dropdown choices ---
+  if (section === 'sewing' && cleaned.operationType != null) {
+    const ok = (SEWING_OPERATION_TYPES as readonly string[]).includes(String(cleaned.operationType));
+    if (!ok) {
+      return { error: `Invalid operationType: "${cleaned.operationType}". Allowed: ${[...SEWING_OPERATION_TYPES].join(', ')}.` };
+    }
+  }
+  if (section === '100%' && cleaned.operationType != null) {
+    const ok = (INSPECTION_OPERATION_TYPES as readonly string[]).includes(String(cleaned.operationType));
+    if (!ok) {
+      return { error: `Invalid operationType: "${cleaned.operationType}". Allowed: ${[...INSPECTION_OPERATION_TYPES].join(', ')}.` };
+    }
+  }
+
+  // --- Operating Time: restrict SectionType to dropdown choices ---
+  if (section === 'operationtime' && cleaned.SectionType != null) {
+    const ok = (SECTION_TYPE_OPTIONS as readonly string[]).includes(String(cleaned.SectionType));
+    if (!ok) {
+      return { error: `Invalid SectionType: "${cleaned.SectionType}". Allowed: ${[...SECTION_TYPE_OPTIONS].join(', ')}.` };
+    }
+  }
+
+  // ---- Coerce Int? columns
+  const intCols = INT_COLS[section] ?? new Set<string>();
   for (const col of intCols) {
     if (col in cleaned) {
       const v = cleaned[col];
       if (v == null || v === '') {
         cleaned[col] = null;
       } else if (typeof v === 'number') {
-        cleaned[col] = Number.isFinite(v) ? (v | 0) : null;
+        cleaned[col] = Number.isFinite(v) ? Math.trunc(v) : null;
       } else {
         const n = Number(v);
-        cleaned[col] = Number.isFinite(n) ? (n | 0) : null;
+        cleaned[col] = Number.isFinite(n) ? Math.trunc(n) : null;
       }
     }
   }
 
-  // Coerce Decimal? columns (store as string for safety with Prisma Decimal)
+  // ---- Coerce Float? columns (Prisma Float is JS number)
+  const floatCols = FLOAT_COLS[section] ?? new Set<string>();
+  for (const col of floatCols) {
+    if (col in cleaned) {
+      const v = cleaned[col];
+      if (v == null || v === '') {
+        cleaned[col] = null;
+      } else if (typeof v === 'number') {
+        cleaned[col] = Number.isFinite(v) ? v : null;
+      } else {
+        const n = Number(String(v).trim());
+        cleaned[col] = Number.isFinite(n) ? n : null;
+      }
+    }
+  }
+
+  // ---- Coerce Decimal? columns (store as string for Prisma.Decimal)
   const decCols = DECIMAL_COLS[section] ?? new Set<string>();
   for (const col of decCols) {
     if (col in cleaned) {
@@ -179,7 +309,8 @@ export async function updateRecord(input: unknown) {
     return { data: updated };
   } catch (e) {
     console.error('Update failed', e);
-    return { error: 'Update failed. Check that numeric/decimal fields contain valid values.' };
+    // You might also want to check for Prisma P2002 Unique constraint violations here.
+    return { error: 'Update failed. Check that numeric/decimal fields contain valid values, and that dropdown fields use approved choices.' };
   }
 }
 
