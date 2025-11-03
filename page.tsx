@@ -95,16 +95,17 @@ const getFieldMapForSection = (section: string) => {
 // Only numeric columns by section (so text fields like panelId/panelType stay text/select)
 const getNumericColsForSection = (section: string) => {
   if (section === "cutting") {
-    // construction, denier, weight, widthSize, lengthSize, actualOutput
-    return new Set([
-      CUTTING_FIELD_MAP.C3,
-      CUTTING_FIELD_MAP.C4,
-      CUTTING_FIELD_MAP.C5,
-      CUTTING_FIELD_MAP.C6,
-      CUTTING_FIELD_MAP.C7,
-      CUTTING_FIELD_MAP.C8,
-    ]);
-  }
+  return new Set([
+    CUTTING_FIELD_MAP.C3, // constructionA
+    CUTTING_FIELD_MAP.C4, // constructionB
+    CUTTING_FIELD_MAP.C5, // meterage
+    CUTTING_FIELD_MAP.C6, // weight
+    CUTTING_FIELD_MAP.C7, // widthSize
+    CUTTING_FIELD_MAP.C8, // lengthSize
+    CUTTING_FIELD_MAP.C9, // actualOutput
+  ]);
+}
+
   if (section === "packing") return new Set(Object.values(PACKING_FIELD_MAP));
   if (section === "100%") return new Set(Object.values(INSPECTION_FIELD_MAP));
   if (section === "sewing") return new Set(Object.values(SEWING_FIELD_MAP));
@@ -255,20 +256,22 @@ export default function SearchPage() {
       date = d ? new Date(d).toLocaleDateString() : "N/A";
     }
 
-    if (sec === "cutting") {
-      const map = CUTTING_FIELD_MAP;
-      return [
-        date,
-        row[map.C1], // panelId
-        row[map.C2], // panelType
-        row[map.C3],
-        row[map.C4],
-        row[map.C5],
-        row[map.C6],
-        row[map.C7],
-        row[map.C8],
-      ];
-    }
+if (sec === "cutting") {
+  const map = CUTTING_FIELD_MAP;
+  return [
+    date,
+    row[map.C1], // panelId
+    row[map.C2], // panelType
+    row[map.C3], // constructionA
+    row[map.C4], // constructionB
+    row[map.C5], // meterage
+    row[map.C6], // weight
+    row[map.C7], // widthSize
+    row[map.C8], // lengthSize
+    row[map.C9], // actualOutput
+  ];
+}
+
 
     if (sec === "packing") {
       return [

@@ -1,33 +1,46 @@
 // lib/inspectionFields.ts
 
-// --- Cutting Data (cutting) ---
+// ---- CUTTING SECTION ----
+
+// Keys (used for display order)
 export const CUTTING_KEYS = [
-    "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8" 
+  "C1", // Panel
+  "C2", // Type
+  "C3", // Construction A
+  "C4", // Construction B
+  "C5", // Meterage
+  "C6", // Weight
+  "C7", // Width Size
+  "C8", // Length Size
+  "C9", // Actual Output
 ] as const;
-export type CuttingKey = (typeof CUTTING_KEYS)[number];
 
-// These map the client-side key to the Prisma column name (based on cutting.tsx)
-export const CUTTING_FIELD_MAP: Record<CuttingKey, string> = {
-    C1: "panelId",       
-    C2: "panelType",     
-    C3: "construction",  
-    C4: "denier",        
-    C5: "weight",        
-    C6: "widthSize",     
-    C7: "lengthSize",    
-    C8: "actualOutput",  
+// Human-readable labels
+export const CUTTING_HEADERS: Record<(typeof CUTTING_KEYS)[number], string> = {
+  C1: "Panel",
+  C2: "Type",
+  C3: "Construction (Tape/Inch) A",
+  C4: "Construction (Tape/Inch) B",
+  C5: "Meterage (m)",
+  C6: "Weight (g/m²)",
+  C7: "Width Size (inch)",
+  C8: "Length Size (inch)",
+  C9: "Actual Output (pcs)",
 };
 
-export const CUTTING_HEADERS: Record<CuttingKey, string> = {
-    C1: "Panel",
-    C2: "Type",
-    C3: "Construction",
-    C4: "Denier",
-    C5: "Weight (g/m²)",
-    C6: "Width (inch)",
-    C7: "Length (inch)",
-    C8: "Actual Output (pcs)",
+// Mapping to your DB column names
+export const CUTTING_FIELD_MAP: Record<(typeof CUTTING_KEYS)[number], string> = {
+  C1: "panelId",
+  C2: "panelType",
+  C3: "constructionA",
+  C4: "constructionB",
+  C5: "meterage",
+  C6: "weight",
+  C7: "widthSize",
+  C8: "lengthSize",
+  C9: "actualOutput",
 };
+
 
 // --- Packing Data ---
 export const PACKING_KEYS = [
