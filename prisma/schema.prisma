@@ -79,8 +79,9 @@ model Cutting {
   panelType      PanelType
 
   /// Measurement fields (allow decimals)
-  construction   Float     // Tape/Inch
-  denier         Float
+  constructionA   Float
+  constructionB   Float  // Tape/Inch
+  meterage         Float
   weight         Float     // g/m²
   widthSize      Float     // inch
   lengthSize     Float     // inch
