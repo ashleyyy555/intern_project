@@ -60,7 +60,6 @@ model User {
 }
 
 // prisma/schema.prisma
-
 enum PanelType {
   Laminated
   Unlaminated
@@ -95,6 +94,7 @@ model Cutting {
   // Helpful for date-range queries
   @@index([operationDate])
 }
+
 
 
 model Sewing {

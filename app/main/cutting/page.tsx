@@ -12,11 +12,11 @@ export default function CuttingPage() {
   const [panelId, setPanelId] = useState("");
   const [panelType, setPanelType] = useState("Laminated");
 
-  // ✅ Construction split into 2 inputs
+  // ✅ Construction split into 2 inputs (sent separately)
   const [constructionA, setConstructionA] = useState("");
   const [constructionB, setConstructionB] = useState("");
 
-  // ✅ Renamed Denier → Meterage
+  // ✅ Denier → Meterage
   const [meterage, setMeterage] = useState("");
 
   const [weight, setWeight] = useState("");
@@ -94,15 +94,13 @@ export default function CuttingPage() {
     setSaving(true);
 
     try {
-      // ✅ Combine construction parts into one string (e.g., "12x8")
-      const construction = `${parseFloat(constructionA)}x${parseFloat(constructionB)}`;
-
       const dataToSave = {
         date,
         panelId,
         panelType,
-        construction,
-        meterage: parseFloat(meterage), // ✅ changed key
+        constructionA: parseFloat(constructionA),
+        constructionB: parseFloat(constructionB),
+        meterage: parseFloat(meterage),
         weight: parseFloat(weight),
         widthSize: parseFloat(widthSize),
         lengthSize: parseFloat(lengthSize),
@@ -215,7 +213,7 @@ export default function CuttingPage() {
         {/* Cutting Measurements Row 1 */}
         <div className="mb-4 pt-4">
           <div className="grid grid-cols-3 gap-4">
-            {/* ✅ Split Construction Input */}
+            {/* ✅ Compact UI for Construction */}
             <div className="space-y-1">
               <label
                 htmlFor="constructionA"
@@ -244,7 +242,6 @@ export default function CuttingPage() {
               </div>
             </div>
 
-            {/* ✅ Renamed field */}
             <div className="space-y-1">
               <label
                 htmlFor="meterage"

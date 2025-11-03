@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-// ---- Types from your UI payload ----
+// ---- Types from your updated UI payload ----
 type CuttingBody = {
   date?: unknown;               // "YYYY-MM-DD"
   panelId?: unknown;            // string
   panelType?: unknown;          // "Laminated" | "Unlaminated"
-  construction?: unknown;       // number-like (float)
-  denier?: unknown;             // number-like (float)
+  constructionA?: unknown;      // number-like (float)
+  constructionB?: unknown;      // number-like (float)
+  meterage?: unknown;           // number-like (float)
   weight?: unknown;             // number-like (float)
   widthSize?: unknown;          // number-like (float)
   lengthSize?: unknown;         // number-like (float)
@@ -21,20 +22,14 @@ type CuttingBody = {
 const json = (d: any, status = 200) => NextResponse.json(d, { status });
 
 function parseYYYYMMDD(s: string): Date | null {
-  // *** CRITICAL FIX: Trim the input string immediately before regex check ***
-  const cleanedString = s.trim(); 
-  
-  // Strict YYYY-MM-DD regex check
+  const cleanedString = s.trim();
   const m = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(cleanedString);
   if (!m) return null;
-  
   const y = Number(m[1]);
   const mo = Number(m[2]);
   const d = Number(m[3]);
-  
   // Use UTC midnight so it maps cleanly to @db.Date
   const dt = new Date(Date.UTC(y, mo - 1, d, 0, 0, 0, 0));
-  
   // Guard overflow dates (e.g., 2025-02-31)
   if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) {
     return null;
@@ -57,6 +52,10 @@ function toInt(v: unknown, field: string): number | null {
 }
 
 const ALLOWED_PANEL_TYPES = new Set(["Laminated", "Unlaminated"]);
+// (Optional) If you want to strictly allow only specific panels, uncomment below and enforce
+// const ALLOWED_PANELS = new Set([
+//   "Heavy Duty Fabric","Light Duty Fabric","Circular Fabric","Type 110","Type 148"
+// ]);
 
 // ---- POST /api/cutting ----
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -65,12 +64,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Required: date, panelId, panelType, all measurements
     const dateStr = String(body?.date ?? "").trim();
-    // This call now uses the fixed parseYYYYMMDD
-    const date = parseYYYYMMDD(dateStr); 
-    if (!date) return json({ message: "Field 'date' must be in YYYY-MM-DD and valid." }, 400);
+    const operationDate = parseYYYYMMDD(dateStr);
+    if (!operationDate) {
+      return json({ message: "Field 'date' must be in YYYY-MM-DD and valid." }, 400);
+    }
 
     const panelId = String(body?.panelId ?? "").trim();
     if (!panelId) return json({ message: "Field 'panelId' is required." }, 400);
+    // if (!ALLOWED_PANELS.has(panelId)) return json({ message: "Invalid 'panelId'." }, 400);
 
     const panelType = String(body?.panelType ?? "").trim();
     if (!ALLOWED_PANEL_TYPES.has(panelType)) {
@@ -78,16 +79,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Coerce numeric fields. All are required based on your UI.
-    const construction = toFloat(body?.construction, "construction");
-    const denier = toFloat(body?.denier, "denier");
+    const constructionA = toFloat(body?.constructionA, "constructionA");
+    const constructionB = toFloat(body?.constructionB, "constructionB");
+    const meterage = toFloat(body?.meterage, "meterage");
     const weight = toFloat(body?.weight, "weight");
     const widthSize = toFloat(body?.widthSize, "widthSize");
     const lengthSize = toFloat(body?.lengthSize, "lengthSize");
     const actualOutput = toInt(body?.actualOutput, "actualOutput");
 
     const requiredNumericFields = {
-      construction,
-      denier,
+      constructionA,
+      constructionB,
+      meterage,
       weight,
       widthSize,
       lengthSize,
@@ -97,24 +100,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (v === null) return json({ message: `Field '${k}' is required.` }, 400);
     }
 
-    // Create new row (duplicates allowed by schema)
+    // Create new row
     const created = await prisma.cutting.create({
       data: {
-        operationDate: date,                 // @db.Date
+        operationDate,                  // @db.Date
         panelId,
-        panelType: panelType as any,         // enum PanelType
-        construction: construction!,         // Float
-        denier: denier!,                     // Float
-        weight: weight!,                     // Float
-        widthSize: widthSize!,               // Float
-        lengthSize: lengthSize!,             // Float
-        actualOutput: actualOutput!,         // Int
+        panelType: panelType as any,    // enum PanelType
+        constructionA: constructionA!,  // Float
+        constructionB: constructionB!,  // Float
+        meterage: meterage!,            // Float
+        weight: weight!,                // Float
+        widthSize: widthSize!,          // Float
+        lengthSize: lengthSize!,        // Float
+        actualOutput: actualOutput!,    // Int
       },
       select: {
         id: true,
         operationDate: true,
         panelId: true,
         panelType: true,
+        constructionA: true,
+        constructionB: true,
+        meterage: true,
+        weight: true,
+        widthSize: true,
+        lengthSize: true,
         actualOutput: true,
         createdAt: true,
       },
