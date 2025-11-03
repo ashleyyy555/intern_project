@@ -20,59 +20,66 @@ type InspectionRow = {
 } & Partial<Record<Machine, number | null>>;
 
 // ---------------------------------------------------------------------------
-// KL timezone helpers
+// ✅ KL timezone helpers (fixed for correct midnight alignment)
 // ---------------------------------------------------------------------------
 function klMidnightUTC(date: Date): Date {
-    const parts = new Intl.DateTimeFormat("en-CA", {
+  const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kuala_Lumpur",
     year: "numeric",
     month: "2-digit",
-    day: "2-digit"
+    day: "2-digit",
   }).formatToParts(date);
 
-  // Extract parts reliably from a single operation
-  const y = Number(parts.find(p => p.type === "year")!.value);
-  const m = Number(parts.find(p => p.type === "month")!.value);
-  const day = Number(parts.find(p => p.type === "day")!.value);
-  
-  // Date.UTC uses 0-indexed month (m-1)
-  return new Date(Date.UTC(y, m - 1, day, 16, 0, 0));
+  const y = Number(parts.find((p) => p.type === "year")!.value);
+  const m = Number(parts.find((p) => p.type === "month")!.value);
+  const d = Number(parts.find((p) => p.type === "day")!.value);
+
+  // ✅ midnight KL = previous day 16:00 UTC
+  return new Date(Date.UTC(y, m - 1, d, -8, 0, 0));
 }
+
 function addDays(d: Date, days: number) {
   const x = new Date(d.getTime());
   x.setUTCDate(x.getUTCDate() + days);
   return x;
 }
+
 function whereByKLDateRange(startDate: Date, endDate: Date) {
   const start = klMidnightUTC(startDate);
   const endEx = addDays(klMidnightUTC(endDate), 1);
-  
-  // 🐛 DEBUG LOG: Show the exact UTC boundaries used for the query
+
+  // Debug logs help confirm your UTC bounds.
   console.log("--- DEBUG QUERY BOUNDARIES (KL Calendar Date to UTC) ---");
   console.log(`Input Start (Local): ${startDate.toDateString()}`);
   console.log(`Input End (Local): ${endDate.toDateString()}`);
   console.log(`Prisma GTE (Inclusive): ${start.toISOString()}`);
   console.log(`Prisma LT (Exclusive): ${endEx.toISOString()}`);
   console.log("-------------------------------------------------------");
-  
+
   return { operationDate: { gte: start, lt: endEx } } as const;
 }
+
 function fmtKLDate(d: Date): string {
-    const prevDay = addDays(d, -1);
-  // en-CA short → YYYY-MM-DD in given timezone
-    return new Intl.DateTimeFormat("en-CA", { 
-        timeZone: "Asia/Kuala_Lumpur", 
-        dateStyle: "short" }).format(prevDay);
+  // ✅ no longer offset one day backward
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    dateStyle: "short",
+  }).format(d);
 }
+
 function toYearMonthKL(d: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kuala_Lumpur", year: "numeric", month: "2-digit"
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
   }).formatToParts(d);
-  const y = parts.find(p => p.type === "year")!.value;
-  const m = parts.find(p => p.type === "month")!.value;
+  const y = parts.find((p) => p.type === "year")!.value;
+  const m = parts.find((p) => p.type === "month")!.value;
   return `${y}-${m}`;
 }
 
+// ---------------------------------------------------------------------------
+// Types for aggregated results
 // ---------------------------------------------------------------------------
 export type DailyByOpType = { date: string; opType: OpType; total: number };
 export type DailyGrandTotal = { date: string; total: number };
@@ -86,12 +93,15 @@ export type MonthlyByMachineAndOpType = {
 export type MonthlyByOpType = { yearMonth: string; opType: OpType; total: number };
 export type MonthlyGrandTotal = { yearMonth: string; total: number };
 
-// Sum helpers over machine columns
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function sumMachines<T extends Partial<Record<Machine, number | null>>>(row: T): number {
   let s = 0;
   for (const m of MACHINES) s += (row[m] ?? 0) as number;
   return s;
 }
+
 function sumMachineKey<T extends string>(acc: Map<T, number>, key: T, val: number) {
   acc.set(key, (acc.get(key) ?? 0) + val);
 }
@@ -105,39 +115,30 @@ export async function getInspectionDaily(
 ): Promise<{ byOpType: DailyByOpType[]; grand: DailyGrandTotal[] }> {
   const where = whereByKLDateRange(startDate, endDate);
 
-  // Group per day AND opType so we can compute each op type cleanly
   const grouped = await prisma.inspection.groupBy({
     by: ["operationDate", "operationType"],
     where,
-    _sum: Object.fromEntries(MACHINES.map(m => [m, true])) as any,
+    _sum: Object.fromEntries(MACHINES.map((m) => [m, true])) as any,
     orderBy: [{ operationDate: "asc" }, { operationType: "asc" }],
   });
 
-  // 🐛 DEBUG LOG: Show how many records were actually retrieved
   console.log(`Prisma successfully retrieved ${grouped.length} records.`);
   if (grouped.length > 0) {
-      console.log(`First retrieved record's operationDate: ${grouped[0].operationDate.toISOString()}`);
+    console.log(`First retrieved record's operationDate: ${grouped[0].operationDate.toISOString()}`);
   }
-  // If this count is 0, the data is not in the expected range.
 
   const byOpType: DailyByOpType[] = [];
-  const grandAcc = new Map<string, number>(); // date → total
+  const grandAcc = new Map<string, number>();
 
   for (const g of grouped) {
     const dateLabel = fmtKLDate(g.operationDate);
     const op = g.operationType as OpType;
-
-    // ignore any unexpected opTypes
     if (!OP_TYPES.includes(op)) continue;
 
     const total = sumMachines(g._sum as any);
     byOpType.push({ date: dateLabel, opType: op, total });
-
     sumMachineKey(grandAcc, dateLabel, total);
   }
-
-  // Fill missing opTypes per day with zero? (optional)
-  // For now, we return only what exists in DB like in packing.
 
   const grand: DailyGrandTotal[] = Array.from(grandAcc, ([date, total]) => ({ date, total }))
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -154,15 +155,14 @@ export async function getInspectionMonthlyByMachineAndOpType(
 ): Promise<MonthlyByMachineAndOpType[]> {
   const where = whereByKLDateRange(startDate, endDate);
 
-  // Group by day + opType; then we aggregate to yearMonth in JS (KL boundary)
   const grouped = await prisma.inspection.groupBy({
     by: ["operationDate", "operationType"],
     where,
-    _sum: Object.fromEntries(MACHINES.map(m => [m, true])) as any,
+    _sum: Object.fromEntries(MACHINES.map((m) => [m, true])) as any,
     orderBy: [{ operationDate: "asc" }, { operationType: "asc" }],
   });
 
-  const acc = new Map<string, number>(); // key: `${ym}|${machine}|${op}`
+  const acc = new Map<string, number>();
   const key = (ym: string, machine: Machine, op: OpType) => `${ym}|${machine}|${op}`;
 
   for (const g of grouped) {
@@ -181,6 +181,7 @@ export async function getInspectionMonthlyByMachineAndOpType(
     const [yearMonth, machine, opType] = k.split("|") as [string, Machine, OpType];
     out.push({ yearMonth, machine, opType, total });
   }
+
   out.sort((a, b) =>
     a.yearMonth === b.yearMonth
       ? a.opType === b.opType
@@ -188,6 +189,7 @@ export async function getInspectionMonthlyByMachineAndOpType(
         : OP_TYPES.indexOf(a.opType) - OP_TYPES.indexOf(b.opType)
       : a.yearMonth.localeCompare(b.yearMonth)
   );
+
   return out;
 }
 
@@ -200,7 +202,7 @@ export async function getInspectionMonthlyByOpType(
 ): Promise<MonthlyByOpType[]> {
   const byMachine = await getInspectionMonthlyByMachineAndOpType(startDate, endDate);
 
-  const acc = new Map<string, number>(); // `${ym}|${op}`
+  const acc = new Map<string, number>();
   const key = (ym: string, op: OpType) => `${ym}|${op}`;
 
   for (const r of byMachine) {
@@ -212,11 +214,13 @@ export async function getInspectionMonthlyByOpType(
     const [yearMonth, opType] = k.split("|") as [string, OpType];
     out.push({ yearMonth, opType, total });
   }
+
   out.sort((a, b) =>
     a.yearMonth === b.yearMonth
       ? OP_TYPES.indexOf(a.opType) - OP_TYPES.indexOf(b.opType)
       : a.yearMonth.localeCompare(b.yearMonth)
   );
+
   return out;
 }
 
@@ -229,18 +233,19 @@ export async function getInspectionMonthlyGrandTotal(
 ): Promise<MonthlyGrandTotal[]> {
   const byOp = await getInspectionMonthlyByOpType(startDate, endDate);
 
-  const acc = new Map<string, number>(); // yearMonth → total
+  const acc = new Map<string, number>();
   for (const r of byOp) {
     acc.set(r.yearMonth, (acc.get(r.yearMonth) ?? 0) + r.total);
   }
 
   const out: MonthlyGrandTotal[] = Array.from(acc, ([yearMonth, total]) => ({ yearMonth, total }))
     .sort((a, b) => a.yearMonth.localeCompare(b.yearMonth));
+
   return out;
 }
 
 // ---------------------------------------------------------------------------
-// Convenience: full dashboard bundle (same shape as packing)
+// 6) Convenience: full dashboard bundle (same shape as packing)
 // ---------------------------------------------------------------------------
 export async function getInspectionDashboardReport(params: {
   startDate: Date;
@@ -258,13 +263,13 @@ export async function getInspectionDashboardReport(params: {
 
   return {
     daily: {
-      byOpType, // [{ date:'YYYY-MM-DD', opType:'IH'|'S'|'OS'|'B', total }]
-      grand,    // [{ date:'YYYY-MM-DD', total }]
+      byOpType,
+      grand,
     },
     monthly: {
-      byMachineAndOpType: monthlyByMachineAndOpType, // [{ yearMonth, machine:'I1'..'I14', opType, total }]
-      byOpType: monthlyByOpType,                     // [{ yearMonth, opType, total }]
-      grand: monthlyGrandTotal,                      // [{ yearMonth, total }]
+      byMachineAndOpType: monthlyByMachineAndOpType,
+      byOpType: monthlyByOpType,
+      grand: monthlyGrandTotal,
     },
   };
 }
