@@ -98,7 +98,7 @@ const fetchPackingReport = async (startDateObj, endDateObj) => {
 };
 
 // --------------------------------------------------------------------------------
-// --- Table Component: CUTTING (Updated to show panelID, including zero totals) ---
+// --- Table Component: CUTTING (Updated to show all panelIDs, including zero totals) ---
 // --------------------------------------------------------------------------------
 // NOTE: In a real app, ALL_PANEL_IDS should be fetched from an API or config.
 // Hardcoding a list for demonstration purposes.
@@ -122,7 +122,7 @@ function CuttingTotalTable({ data }) {
 
   const dataKeys = Object.keys(finalPanelsByID);
 
-  if (!data || dataKeys.length === 0) {
+  if (dataKeys.length === 0) {
     return (
       <div className="p-4 border-t border-gray-200">
         <p className="text-center text-gray-500 italic">
@@ -132,7 +132,7 @@ function CuttingTotalTable({ data }) {
     );
   }
 
-  // Calculate Grand Total across all existing data (only if data.panels is not null/empty)
+  // Calculate Grand Total across all existing data
   const grandTotal = (data?.panels || []).reduce((a, p) => a + p.pcs, 0);
 
   return (
@@ -185,35 +185,33 @@ function CuttingTotalTable({ data }) {
 
 
 // --------------------------------------------------------------------------------
-// --- Table Component: SEWING ---
+// --- Table Component: SEWING (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
 function SewingTotalTable({ dailyData }) {
   const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
   const TITLE = "Sewing";
 
-  const totalsByOpType = {};
+  const totalsByOpTypeFromData = {};
   let overallGrandTotal = 0;
 
   if (dailyData?.dailyByOpTypeRaw) {
     Object.values(dailyData.dailyByOpTypeRaw).forEach((dateData) => {
       Object.entries(dateData).forEach(([opType, total]) => {
         if (OP_TYPES.includes(opType) && typeof total === "number") {
-          totalsByOpType[opType] = (totalsByOpType[opType] || 0) + total;
+          totalsByOpTypeFromData[opType] = (totalsByOpTypeFromData[opType] || 0) + total;
           overallGrandTotal += total;
         }
       });
     });
   }
 
-  if (overallGrandTotal === 0) {
-    return (
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-center text-gray-500 italic">
-          No {TITLE} data available for this range.
-        </p>
-      </div>
-    );
-  }
+  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
+  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+    acc[opType] = totalsByOpTypeFromData[opType] || 0;
+    return acc;
+  }, {});
+
+  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
 
   return (
     <>
@@ -242,7 +240,7 @@ function SewingTotalTable({ dailyData }) {
                   {op}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
-                  {totalsByOpType[op]?.toLocaleString() || 0}
+                  {finalTotalsByOpType[op]?.toLocaleString() || 0}
                 </td>
                 {index === 0 && (
                   <td
@@ -263,30 +261,29 @@ function SewingTotalTable({ dailyData }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Table Component: INSPECTION ---
+// --- Table Component: INSPECTION (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
 function InspectionTotalTable({ dailyData }) {
   const OP_TYPES = ["IH", "S", "OS", "B"];
   const TITLE = "Inspection";
 
-  if (!dailyData || dailyData.byOpType.length === 0) {
-    return (
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-center text-gray-500 italic">
-          No {TITLE} data available for this range.
-        </p>
-      </div>
-    );
-  }
-
-  const totalsByOpType = dailyData.byOpType.reduce((acc, row) => {
+  // Aggregate only the data that was fetched
+  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce((acc, row) => {
     if (OP_TYPES.includes(row.opType)) {
       acc[row.opType] = (acc[row.opType] || 0) + row.total;
     }
     return acc;
   }, {});
 
-  const overallGrandTotal = Object.values(totalsByOpType).reduce((sum, total) => sum + total, 0);
+  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
+  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+    acc[opType] = totalsByOpTypeFromData[opType] || 0;
+    return acc;
+  }, {});
+
+  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce((sum, total) => sum + total, 0);
+
+  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
 
   return (
     <>
@@ -315,7 +312,7 @@ function InspectionTotalTable({ dailyData }) {
                   {op}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
-                  {totalsByOpType[op]?.toLocaleString() || 0}
+                  {finalTotalsByOpType[op]?.toLocaleString() || 0}
                 </td>
                 {index === 0 && (
                   <td
@@ -336,30 +333,29 @@ function InspectionTotalTable({ dailyData }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Table Component: PACKING ---
+// --- Table Component: PACKING (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
 function PackingTotalTable({ dailyData }) {
   const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
   const TITLE = "Packing";
 
-  if (!dailyData || dailyData.byOpType.length === 0) {
-    return (
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-center text-gray-500 italic">
-          No {TITLE} data available for this range.
-        </p>
-      </div>
-    );
-  }
-
-  const totalsByOpType = dailyData.byOpType.reduce((acc, row) => {
+  // Aggregate only the data that was fetched
+  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce((acc, row) => {
     if (OP_TYPES.includes(row.opType)) {
       acc[row.opType] = (acc[row.opType] || 0) + row.total;
     }
     return acc;
   }, {});
 
-  const overallGrandTotal = Object.values(totalsByOpType).reduce((sum, total) => sum + total, 0);
+  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
+  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+    acc[opType] = totalsByOpTypeFromData[opType] || 0;
+    return acc;
+  }, {});
+
+  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce((sum, total) => sum + total, 0);
+
+  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
 
   return (
     <>
@@ -388,7 +384,7 @@ function PackingTotalTable({ dailyData }) {
                   {op}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
-                  {totalsByOpType[op]?.toLocaleString() || 0}
+                  {finalTotalsByOpType[op]?.toLocaleString() || 0}
                 </td>
                 {index === 0 && (
                   <td
