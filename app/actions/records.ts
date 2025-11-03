@@ -37,10 +37,10 @@ const SEWING_OPERATION_TYPES = [
 ] as const;
 
 const INSPECTION_OPERATION_TYPES = [
-  'In house',            // adjust to your canonical spelling if needed (e.g., 'in-house')
-  'Semi',
-  'Complete wt 100%',
-  'Complete wo 100%',
+  'IH',            // adjust to your canonical spelling if needed (e.g., 'in-house')
+  'S',
+  'OS',
+  'B',
 ] as const;
 
 const SECTION_TYPE_OPTIONS = [
