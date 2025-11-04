@@ -17,7 +17,7 @@ const DAY_FIELDS: DayKey[] = Array.from({ length: 31 }, (_, i) => `D${i + 1}` as
 type OperationTimeBody = {
   operatorId?: unknown;
   reportMonth?: unknown;        // "YYYY-MM"
-  operationType?: unknown;      // e.g., "sewing", "100%", etc.
+  operationType?: unknown;      // e.g., "Sewing", "100% Inspection", etc.
   dataEntries?: Record<string, unknown>;
 };
 

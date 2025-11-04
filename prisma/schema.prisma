@@ -203,7 +203,7 @@ model Packing {
 
 model OperationTime {
   id          String   @id @default(cuid())
-  SectionType String    // e.g., "cutting", "sewing", "finishing"
+  SectionType String    
   OperatorId  Int
   yearMonth   String    // "YYYY-MM"
 

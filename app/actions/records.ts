@@ -20,6 +20,7 @@ import {
 
 type ModelKey = keyof typeof prisma;
 
+
 /** Canonical options used in create UI — enforce on update too (KEEP IN SYNC WITH UI) */
 const PANEL_ID_OPTIONS = [
   'Heavy Duty Fabric',

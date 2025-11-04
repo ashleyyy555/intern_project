@@ -149,8 +149,8 @@ export default function OperatingPage() {
               onChange={(e) => setOperationType(e.target.value)}
               className={`${baseInputStyle} appearance-none`}
             >
-              <option value="sewing">Sewing</option>
-              <option value="100%">100% Inspection</option>
+              <option value="Sewing">Sewing</option>
+              <option value="100% Inspection">100% Inspection</option>
             </select>
           </div>
         </div>
