@@ -10,7 +10,8 @@ const getTodayDate = () => new Date().toISOString().split("T")[0];
 export default function CuttingPage() {
   const [date, setDate] = useState(getTodayDate());
   const [panelId, setPanelId] = useState("");
-  const [panelType, setPanelType] = useState("Laminated");
+  // 🔄 Changed default state from "Laminated" to an empty string for the new input
+  const [panelType, setPanelType] = useState(""); 
 
   // ✅ Construction split into 2 inputs (sent separately)
   const [constructionA, setConstructionA] = useState("");
@@ -36,7 +37,8 @@ export default function CuttingPage() {
   const resetForm = () => {
     setDate(getTodayDate());
     setPanelId("");
-    setPanelType("Laminated");
+    // 🔄 Reset to empty string
+    setPanelType(""); 
     setConstructionA("");
     setConstructionB("");
     setMeterage("");
@@ -97,7 +99,7 @@ export default function CuttingPage() {
       const dataToSave = {
         date,
         panelId,
-        panelType,
+        panelType, // ➡️ panelType is now a string from the input
         constructionA: parseFloat(constructionA),
         constructionB: parseFloat(constructionB),
         meterage: parseFloat(meterage),
@@ -177,7 +179,7 @@ export default function CuttingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
           <div className="flex items-center space-x-3">
             <label htmlFor="panelId" className="text-lg font-semibold whitespace-nowrap">
-              Panel:
+              Fabric:
             </label>
             <select
               id="panelId"
@@ -185,7 +187,7 @@ export default function CuttingPage() {
               onChange={(e) => setPanelId(e.target.value)}
               className={`${baseInputStyleLeft} appearance-none`}
             >
-              <option value="">Select Panel</option>
+              <option value="">Select Fabric</option>
               <option value="Heavy Duty Fabric">Heavy Duty Fabric</option>
               <option value="Light Duty Fabric">Light Duty Fabric</option>
               <option value="Circular Fabric">Circular Fabric</option>
@@ -194,20 +196,21 @@ export default function CuttingPage() {
             </select>
           </div>
 
+          {/* 🔄 Type Input (Was a Dropdown) */}
           <div className="flex items-center space-x-3">
             <label htmlFor="panelType" className="text-lg font-semibold whitespace-nowrap">
-              Type:
+              Panel:
             </label>
-            <select
+            <input
               id="panelType"
+              type="text" // ➡️ Changed to text input
+              placeholder="e.g., Top Panel, Body" // 💡 Added placeholder
               value={panelType}
               onChange={(e) => setPanelType(e.target.value)}
-              className={`${baseInputStyleLeft} appearance-none`}
-            >
-              <option value="Laminated">Laminated</option>
-              <option value="Unlaminated">Unlaminated</option>
-            </select>
+              className={baseInputStyleLeft}
+            />
           </div>
+          {/* ❌ Removed the Dropdown and added an Input */}
         </div>
 
         {/* Cutting Measurements Row 1 */}

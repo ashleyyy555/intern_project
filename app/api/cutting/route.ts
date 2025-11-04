@@ -7,15 +7,15 @@ export const runtime = "nodejs";
 // ---- Types from your updated UI payload ----
 type CuttingBody = {
   date?: unknown;               // "YYYY-MM-DD"
-  panelId?: unknown;            // string
-  panelType?: unknown;          // "Laminated" | "Unlaminated"
-  constructionA?: unknown;      // number-like (float)
-  constructionB?: unknown;      // number-like (float)
-  meterage?: unknown;           // number-like (float)
-  weight?: unknown;             // number-like (float)
-  widthSize?: unknown;          // number-like (float)
-  lengthSize?: unknown;         // number-like (float)
-  actualOutput?: unknown;       // number-like (int)
+  panelId?: unknown;            // string (required)
+  panelType?: unknown;          // free text (optional) - previously enum
+  constructionA?: unknown;      // number-like (float, required)
+  constructionB?: unknown;      // number-like (float, required)
+  meterage?: unknown;           // number-like (float, required)
+  weight?: unknown;             // number-like (float, required)
+  widthSize?: unknown;          // number-like (float, required)
+  lengthSize?: unknown;         // number-like (float, required)
+  actualOutput?: unknown;       // number-like (int, required)
 };
 
 // ---- Helpers ----
@@ -51,7 +51,6 @@ function toInt(v: unknown, field: string): number | null {
   return n;
 }
 
-const ALLOWED_PANEL_TYPES = new Set(["Laminated", "Unlaminated"]);
 // (Optional) If you want to strictly allow only specific panels, uncomment below and enforce
 // const ALLOWED_PANELS = new Set([
 //   "Heavy Duty Fabric","Light Duty Fabric","Circular Fabric","Type 110","Type 148"
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = (await req.json()) as CuttingBody;
 
-    // Required: date, panelId, panelType, all measurements
+    // Required: date, panelId, and all measurements (panelType is now free-text and optional)
     const dateStr = String(body?.date ?? "").trim();
     const operationDate = parseYYYYMMDD(dateStr);
     if (!operationDate) {
@@ -73,10 +72,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!panelId) return json({ message: "Field 'panelId' is required." }, 400);
     // if (!ALLOWED_PANELS.has(panelId)) return json({ message: "Invalid 'panelId'." }, 400);
 
-    const panelType = String(body?.panelType ?? "").trim();
-    if (!ALLOWED_PANEL_TYPES.has(panelType)) {
-      return json({ message: "Field 'panelType' must be 'Laminated' or 'Unlaminated'." }, 400);
-    }
+    // Free-text panelType (optional). Empty string becomes null.
+    const panelTypeRaw = String(body?.panelType ?? "").trim();
+    const panelType = panelTypeRaw === "" ? null : panelTypeRaw;
 
     // Coerce numeric fields. All are required based on your UI.
     const constructionA = toFloat(body?.constructionA, "constructionA");
@@ -105,7 +103,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data: {
         operationDate,                  // @db.Date
         panelId,
-        panelType: panelType as any,    // enum PanelType
+        panelType,                      // String | null (free-text now)
         constructionA: constructionA!,  // Float
         constructionB: constructionB!,  // Float
         meterage: meterage!,            // Float
@@ -133,6 +131,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return json({ data: created }, 201);
   } catch (err) {
     console.error("[/api/cutting] POST error:", err);
+    // If our own validators threw (e.g., "Field 'weight' must be a valid number."),
+    // return a 400 instead of 500.
+    if (err instanceof Error && /^Field '.+'/.test(err.message)) {
+      return json({ message: err.message }, 400);
+    }
     const message =
       typeof err === "object" && err !== null && "message" in err
         ? String((err as any).message)

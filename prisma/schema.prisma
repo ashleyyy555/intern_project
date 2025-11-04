@@ -60,11 +60,6 @@ model User {
 }
 
 // prisma/schema.prisma
-enum PanelType {
-  Laminated
-  Unlaminated
-}
-
 model Cutting {
   id             String   @id @default(cuid())
 
@@ -74,8 +69,7 @@ model Cutting {
   /// Dropdown selection in your UI
   panelId        String   // e.g., "Heavy Duty Fabric", "Type 148"
 
-  /// "Laminated" | "Unlaminated"
-  panelType      PanelType
+  panelType      String?
 
   /// Measurement fields (allow decimals)
   constructionA   Float

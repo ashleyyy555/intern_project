@@ -20,7 +20,6 @@ import {
 
 type ModelKey = keyof typeof prisma;
 
-
 /** Canonical options used in create UI — enforce on update too (KEEP IN SYNC WITH UI) */
 const PANEL_ID_OPTIONS = [
   'Heavy Duty Fabric',
@@ -30,24 +29,42 @@ const PANEL_ID_OPTIONS = [
   'Type 148',
 ] as const;
 
-const PANEL_TYPE_OPTIONS = ['Laminated', 'Unlaminated'] as const;
-
 /** NEW: dropdowns for sewing / 100% inspection operationType, and operationtime SectionType */
 const SEWING_OPERATION_TYPES = [
   'SP1','SP2','PC','SB','SPP','SS','SSP','SD','ST',
 ] as const;
 
 const INSPECTION_OPERATION_TYPES = [
-  'IH',            // adjust to your canonical spelling if needed (e.g., 'in-house')
+  'IH', // in-house (canonical short label)
   'S',
   'OS',
   'B',
 ] as const;
 
-const SECTION_TYPE_OPTIONS = [
-  'Sewing',
-  '100% Inspection',
-] as const;
+/** We want SectionType uniform as exactly these two: */
+const SECTION_TYPE_CANONICAL = ['Sewing', '100% Inspection'] as const;
+type SectionTypeCanonical = typeof SECTION_TYPE_CANONICAL[number];
+
+/** Accept common variants and normalize them to canonical */
+const SECTION_TYPE_SYNONYMS: Record<string, SectionTypeCanonical> = {
+  'sewing': 'Sewing',
+  'sew': 'Sewing',
+  '100% inspection': '100% Inspection',
+  '100 inspection': '100% Inspection',
+  'inspection 100%': '100% Inspection',
+  '100': '100% Inspection',
+  'inspection': '100% Inspection',
+};
+
+function normalizeSectionType(v: unknown): SectionTypeCanonical | null {
+  if (v == null) return null;
+  const raw = String(v).trim();
+  if ((SECTION_TYPE_CANONICAL as readonly string[]).includes(raw)) {
+    return raw as SectionTypeCanonical;
+  }
+  const key = raw.toLowerCase();
+  return SECTION_TYPE_SYNONYMS[key] ?? null;
+}
 
 /**
  * Section keys aligned with app/actions/search.ts
@@ -91,22 +108,25 @@ const DeleteSchema = FetchSchema;
 /**
  * Build per-section sets of Int?/Float?/Decimal? columns.
  * - Cutting:
- * • Int?    : actualOutput
- * • Float?  : construction, denier, weight, widthSize, lengthSize
- * - Existing efficiency tables use Decimal? for "operating minutes" to preserve precision.
+ *   • Int?    : actualOutput (C9)
+ *   • Float?  : constructionA (C3), constructionB (C4), meterage (C5), weight (C6), widthSize (C7), lengthSize (C8)
+ * - Efficiency tables use Decimal? for minutes to preserve precision.
  */
 
 // ---- Cutting: column sets ----
+// Int? columns: ONLY actualOutput
 const CUTTING_INT_COLS = new Set<string>([
-  CUTTING_FIELD_MAP.C8, // actualOutput (Int)
+  CUTTING_FIELD_MAP.C9, // actualOutput (Int)
 ]);
 
+// Float? columns: all numeric non-int metrics
 const CUTTING_FLOAT_COLS = new Set<string>([
-  CUTTING_FIELD_MAP.C3, // construction (Float)
-  CUTTING_FIELD_MAP.C4, // denier (Float)
-  CUTTING_FIELD_MAP.C5, // weight (Float)
-  CUTTING_FIELD_MAP.C6, // widthSize (Float)
-  CUTTING_FIELD_MAP.C7, // lengthSize (Float)
+  CUTTING_FIELD_MAP.C3, // constructionA
+  CUTTING_FIELD_MAP.C4, // constructionB
+  CUTTING_FIELD_MAP.C5, // meterage
+  CUTTING_FIELD_MAP.C6, // weight
+  CUTTING_FIELD_MAP.C7, // widthSize
+  CUTTING_FIELD_MAP.C8, // lengthSize
 ]);
 
 /**
@@ -208,22 +228,16 @@ export async function updateRecord(input: unknown) {
   }
 
   // --------------------------------------------------------------------------
-  // Cutting-only validations for dropdown fields (Server-side safety net)
-  // Ensure PanelType and PanelId match canonical allowed values.
+  // Cutting: validate panelId only; panelType is free-text ("" -> null)
   // --------------------------------------------------------------------------
   if (section === 'cutting') {
-    if (cleaned.panelType != null) {
-      const ok = PANEL_TYPE_OPTIONS.includes(String(cleaned.panelType) as any);
-      if (!ok) {
-        return {
-          error: `Invalid panelType: "${cleaned.panelType}". Must be one of: ${PANEL_TYPE_OPTIONS.join(' or ')}.`
-        };
-      }
+    if ('panelType' in cleaned) {
+      const v = cleaned.panelType;
+      cleaned.panelType = v == null ? null : String(v).trim() || null;
     }
     if (cleaned.panelId != null) {
-      const ok = PANEL_ID_OPTIONS.includes(String(cleaned.panelId) as any);
+      const ok = (PANEL_ID_OPTIONS as readonly string[]).includes(String(cleaned.panelId));
       if (!ok) {
-        // Enhanced error message to explicitly list options
         return {
           error: `Invalid panelId: "${cleaned.panelId}". Must be one of: ${PANEL_ID_OPTIONS.join(', ')}.`
         };
@@ -245,12 +259,15 @@ export async function updateRecord(input: unknown) {
     }
   }
 
-  // --- Operating Time: restrict SectionType to dropdown choices ---
+  // --- Operating Time: normalize & restrict SectionType to canonical choices ---
   if (section === 'operationtime' && cleaned.SectionType != null) {
-    const ok = (SECTION_TYPE_OPTIONS as readonly string[]).includes(String(cleaned.SectionType));
-    if (!ok) {
-      return { error: `Invalid SectionType: "${cleaned.SectionType}". Allowed: ${[...SECTION_TYPE_OPTIONS].join(', ')}.` };
+    const normalized = normalizeSectionType(cleaned.SectionType);
+    if (!normalized) {
+      return {
+        error: `Invalid SectionType: "${cleaned.SectionType}". Allowed: ${[...SECTION_TYPE_CANONICAL].join(', ')}.`
+      };
     }
+    cleaned.SectionType = normalized; // write back canonical label
   }
 
   // ---- Coerce Int? columns

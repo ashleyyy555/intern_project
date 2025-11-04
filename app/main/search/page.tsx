@@ -24,7 +24,7 @@ const PANEL_ID_OPTIONS = [
   "Type 148",
 ] as const;
 
-const PANEL_TYPE_OPTIONS = ["Laminated", "Unlaminated"] as const;
+// (panelType is now FREE-TEXT — no constant or dropdown)
 
 // ---- NEW: Operation type / Section type dropdown options (keep in sync with server) ----
 const SEWING_OPERATION_TYPES = [
@@ -32,10 +32,7 @@ const SEWING_OPERATION_TYPES = [
 ] as const;
 
 const INSPECTION_OPERATION_TYPES = [
-  "IH",           // adjust to your canonical spelling if needed (e.g., 'in-house')
-  "S",
-  "OS",
-  "B",
+  "IH", "S", "OS", "B",
 ] as const;
 
 const SECTION_TYPE_OPTIONS = [
@@ -92,19 +89,19 @@ const getFieldMapForSection = (section: string) => {
   return {} as Record<string, string>;
 };
 
-// Only numeric columns by section (so text fields like panelId/panelType stay text/select)
+// Only numeric columns by section (so text fields like panelId/panelType stay text)
 const getNumericColsForSection = (section: string) => {
   if (section === "cutting") {
-  return new Set([
-    CUTTING_FIELD_MAP.C3, // constructionA
-    CUTTING_FIELD_MAP.C4, // constructionB
-    CUTTING_FIELD_MAP.C5, // meterage
-    CUTTING_FIELD_MAP.C6, // weight
-    CUTTING_FIELD_MAP.C7, // widthSize
-    CUTTING_FIELD_MAP.C8, // lengthSize
-    CUTTING_FIELD_MAP.C9, // actualOutput
-  ]);
-}
+    return new Set([
+      CUTTING_FIELD_MAP.C3, // constructionA
+      CUTTING_FIELD_MAP.C4, // constructionB
+      CUTTING_FIELD_MAP.C5, // meterage
+      CUTTING_FIELD_MAP.C6, // weight
+      CUTTING_FIELD_MAP.C7, // widthSize
+      CUTTING_FIELD_MAP.C8, // lengthSize
+      CUTTING_FIELD_MAP.C9, // actualOutput (int)
+    ]);
+  }
 
   if (section === "packing") return new Set(Object.values(PACKING_FIELD_MAP));
   if (section === "100%") return new Set(Object.values(INSPECTION_FIELD_MAP));
@@ -256,22 +253,21 @@ export default function SearchPage() {
       date = d ? new Date(d).toLocaleDateString() : "N/A";
     }
 
-if (sec === "cutting") {
-  const map = CUTTING_FIELD_MAP;
-  return [
-    date,
-    row[map.C1], // panelId
-    row[map.C2], // panelType
-    row[map.C3], // constructionA
-    row[map.C4], // constructionB
-    row[map.C5], // meterage
-    row[map.C6], // weight
-    row[map.C7], // widthSize
-    row[map.C8], // lengthSize
-    row[map.C9], // actualOutput
-  ];
-}
-
+    if (sec === "cutting") {
+      const map = CUTTING_FIELD_MAP;
+      return [
+        date,
+        row[map.C1], // panelId
+        row[map.C2], // panelType
+        row[map.C3], // constructionA
+        row[map.C4], // constructionB
+        row[map.C5], // meterage
+        row[map.C6], // weight
+        row[map.C7], // widthSize
+        row[map.C8], // lengthSize
+        row[map.C9], // actualOutput
+      ];
+    }
 
     if (sec === "packing") {
       return [
@@ -627,17 +623,17 @@ if (sec === "cutting") {
               </div>
             )}
 
-            {/* Cutting: dropdowns for panelId / panelType */}
+            {/* Cutting: panelId select + panelType FREE-TEXT */}
             {editSection === "cutting" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Panel</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fabric</label>
                   <select
                     value={editData?.panelId ?? ""}
                     onChange={(e) => setEditData((d: any) => ({ ...d, panelId: e.target.value }))}
                     className="w-full p-2 border rounded-lg bg-white"
                   >
-                    <option value="" disabled>Select Panel</option>
+                    <option value="" disabled>Select Fabric</option>
                     {PANEL_ID_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
@@ -645,17 +641,14 @@ if (sec === "cutting") {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Panel</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Top Panel, Body"
                     value={editData?.panelType ?? ""}
                     onChange={(e) => setEditData((d: any) => ({ ...d, panelType: e.target.value }))}
-                    className="w-full p-2 border rounded-lg bg-white"
-                  >
-                    <option value="" disabled>Select Type</option>
-                    {PANEL_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
+                    className="w-full p-2 border rounded-lg"
+                  />
                 </div>
               </div>
             )}
@@ -671,7 +664,7 @@ if (sec === "cutting") {
                   const col = (map as any)[k]; // actual DB column name
                   const text = (labels as any)[k] || k;
 
-                  // Skip Cutting dropdown fields here (they're rendered above)
+                  // Skip Cutting dropdown/text fields here (rendered above)
                   if (editSection === "cutting" && (col === "panelId" || col === "panelType")) {
                     return null;
                   }
