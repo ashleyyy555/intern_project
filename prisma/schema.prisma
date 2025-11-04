@@ -251,7 +251,7 @@ enum ProcessType {
 
 model EfficiencySewing {
   id                        String   @id @default(uuid())
-  operationDate             DateTime @db.Date
+  operationDate            DateTime @default(now())
   processType               ProcessType @default(SEWING)
 
   // Targets
@@ -274,7 +274,7 @@ model EfficiencySewing {
 
 model EfficiencyInspection100 {
   id                        String   @id @default(uuid())
-  operationDate             DateTime @db.Date
+  operationDate            DateTime @default(now())
   processType               ProcessType @default(INSPECTION_100)
 
   m1_target_panel          Int?     // M1
