@@ -16,7 +16,7 @@ export type PanelMetrics = {
   mL: number;   // (2) lengthSize * actualOutput
 };
 
-/** Day → PanelType → PanelId */
+/** Day → PanelType (free-text) → PanelId */
 export type DailyBreakdown = {
   [dateYYYYMMDD: string]: {
     byPanel: {
@@ -28,7 +28,7 @@ export type DailyBreakdown = {
   };
 };
 
-/** Totals aggregated across the entire range by panelType → panelId */
+/** Totals aggregated across the entire range by panelType (free-text) → panelId */
 export type TotalsByPanel = {
   [panelType: string]: {
     [panelId: string]: PanelMetrics; // (3) == m2, (4) == mL
@@ -68,6 +68,18 @@ function toYM(d: Date): string {
   return d.toISOString().slice(0, 7);
 }
 
+/** Normalize free-text panelType so we don't get empty/null object keys */
+function normalizePanelType(v: string | null): string {
+  const s = (v ?? "").trim();
+  return s === "" ? "(Unspecified)" : s;
+}
+
+/** Normalize panelId for safety (should always exist, but guard anyway) */
+function normalizePanelId(v: string | null): string {
+  const s = (v ?? "").trim();
+  return s === "" ? "(Unknown Fabric)" : s;
+}
+
 /**
  * Fetch Cutting rows in [startDate, endDate] inclusive.
  * Assumes `operationDate` is stored as @db.Date (no time).
@@ -83,11 +95,12 @@ async function fetchCuttingRows(startDate: string, endDate: string) {
     select: {
       operationDate: true,
       panelId: true,
-      panelType: true,
+      panelType: true,     // now free-text (string | null)
       weight: true,
       lengthSize: true,
       actualOutput: true,
     },
+    // Sorting still fine with nullable strings; nulls come first in most DBs
     orderBy: [{ operationDate: "asc" }, { panelType: "asc" }, { panelId: "asc" }],
   });
 }
@@ -117,8 +130,10 @@ export async function getCuttingReport(
   for (const r of rows) {
     const dateKey = toYMD(r.operationDate);
     const monthKey = toYM(r.operationDate);
-    const panelType = r.panelType; // "Laminated" | "Unlaminated"
-    const panelId = r.panelId;
+
+    // panelType is now free-text → normalize blanks/nulls
+    const panelType = normalizePanelType(r.panelType as string | null);
+    const panelId = normalizePanelId(r.panelId as string | null);
 
     const pcs = r.actualOutput ?? 0;
     const m2 = (r.weight ?? 0) * pcs;     // (1)
