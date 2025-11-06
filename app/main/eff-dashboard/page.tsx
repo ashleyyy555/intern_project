@@ -37,6 +37,14 @@ const fetchEfficiencyReportData = async (startDateObj, endDateObj) => {
 // --- Calculation and Table Components ---
 // --------------------------------------------------------------------------------
 
+// --- Common Column Width Classes ---
+// Defined once to ensure consistency
+const PHASE_COL_WIDTH = "w-[250px]"; // Increased width slightly to ensure label fits
+const RATED_COL_WIDTH = "w-[150px]";
+const ACTUAL_COL_WIDTH = "w-[180px]";
+const EFFICIENCY_COL_WIDTH = "w-[150px]";
+
+
 /**
  * Hook for calculating Efficiency (Rated Output vs. Actual Output)
  */
@@ -89,16 +97,20 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-blue-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 w-1/4">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                 Production Phase
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider w-32">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${RATED_COL_WIDTH}`}>
                 Rated Output
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider w-32">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${ACTUAL_COL_WIDTH}`}>
                 Actual Output (Input)
               </th>
-              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider w-32 bg-blue-700">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider ${EFFICIENCY_COL_WIDTH} bg-blue-700`}>
                 Efficiency (%)
               </th>
             </tr>
@@ -106,13 +118,13 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
           <tbody className="bg-white divide-y divide-gray-200">
             {metrics.map((metric) => (
               <tr key={metric.phase} className="hover:bg-blue-50/50">
-                <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-800 align-middle border-r border-gray-300 w-1/4">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-800 align-middle border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                   {metric.phase}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle ${RATED_COL_WIDTH}`}>
                   {metric.ratedOutput.toLocaleString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-lg text-right align-middle">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg text-right align-middle ${ACTUAL_COL_WIDTH}`}>
                   <input
                     type="number"
                     min="0"
@@ -122,7 +134,7 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
                     aria-label={`Actual Output for ${metric.phase}`}
                   />
                 </td>
-                <td className={`px-6 py-4 whitespace-nowrap text-2xl font-extrabold text-right align-middle ${
+                <td className={`px-6 py-4 whitespace-nowrap text-2xl font-extrabold text-right align-middle ${EFFICIENCY_COL_WIDTH} ${
                   parseFloat(metric.efficiency) >= 95
                     ? 'text-green-600'
                     : parseFloat(metric.efficiency) >= 80
@@ -179,50 +191,54 @@ function useOperatingTimeMetrics(rawReportData) {
   }, [rawReportData]);
 }
 
-function OperatingTimeSummaryTable({ rawReportData }) { // Removed ratedOperatingTimes state/setter
+function OperatingTimeSummaryTable({ rawReportData }) { 
   const metrics = useOperatingTimeMetrics(rawReportData);
 
   const hasData = metrics.some(m => m.actualTime > 0 || m.ratedTime > 0);
   
-
+  // 🔄 Changed header color classes from 'purple' to 'blue'
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold text-purple-600 mb-4 flex items-center">
+      <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center">
         Operating Time and Utilization (Time in Minutes)
       </h2>
       <div className="overflow-x-auto shadow-md rounded-lg border border-gray-100">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-purple-50">
+          {/* 🔄 Changed header background from 'purple-50' to 'blue-50' and text from 'purple-700' to 'blue-700' */}
+          <thead className="bg-blue-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-bold text-purple-700 uppercase tracking-wider border-r border-gray-300 w-1/4">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                 Production Phase
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider w-32">
-                Rated Operating Time (Theoretical)
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${RATED_COL_WIDTH}`}>
+                Rated Operating Time
               </th>
-              <th className="px-6 py-3 text-right text-xs font-bold text-purple-700 uppercase tracking-wider w-32">
+              {/* 🔄 Applied consistent width */}
+              <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${ACTUAL_COL_WIDTH}`}>
                 Actual Operating Time
               </th>
-              <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider w-32 bg-purple-700">
+              {/* 🔄 Applied consistent width and background color */}
+              <th className={`px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider ${EFFICIENCY_COL_WIDTH} bg-blue-700`}>
                 Utilization (%)
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {metrics.map((metric) => (
-              <tr key={metric.phase} className="hover:bg-purple-50/50">
-                <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-800 align-middle border-r border-gray-300 w-1/4">
+              <tr key={metric.phase} className="hover:bg-blue-50/50">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-800 align-middle border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                   {metric.phase}
                 </td>
-                {/* Display Rated Time from API */}
-                <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle ${RATED_COL_WIDTH}`}>
                   {metric.ratedTime.toLocaleString()}
                 </td>
-                {/* Display Actual Time from API */}
-                <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle">
+                <td className={`px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle ${ACTUAL_COL_WIDTH}`}>
                   {metric.actualTime.toLocaleString()}
                 </td>
-                <td className={`px-6 py-4 whitespace-nowrap text-2xl font-extrabold text-right align-middle ${
+                {/* 🔄 Applied the same conditional text color logic as Efficiency */}
+                <td className={`px-6 py-4 whitespace-nowrap text-2xl font-extrabold text-right align-middle ${EFFICIENCY_COL_WIDTH} ${
                   parseFloat(metric.utilization) >= 95
                     ? 'text-green-600'
                     : parseFloat(metric.utilization) >= 80
@@ -254,9 +270,9 @@ export default function EfficiencyDashboard() {
 
   const [efficiencyReportData, setEfficiencyReportData] = useState(null);
   const [actualOutputs, setActualOutputs] = useState({});
-  // ✅ Removed ratedOperatingTimes state
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false); 
 
   const initializeStates = useCallback((data) => {
     if (!data) return;
@@ -264,7 +280,6 @@ export default function EfficiencyDashboard() {
       sewing: Math.round(data.sewing?.actualOutput || 0),
       inspection100: Math.round(data.inspection100?.actualOutput || 0),
     });
-    // ✅ Removed ratedOperatingTimes initialization
   }, []);
 
   useEffect(() => {
@@ -308,6 +323,31 @@ export default function EfficiencyDashboard() {
     }
   };
 
+  const handleExport = async () => {
+    if (!efficiencyReportData) {
+      setMessage('Error: Please search and load data before exporting.');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      setMessage('Preparing export file...');
+      
+      // Simulate export process
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
+
+      setMessage('Data successfully exported! (Placeholder)');
+    } catch (error) {
+      console.error("Export error:", error);
+      setMessage(`Error during export: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+
   const hasDataForRange = efficiencyReportData && (
     efficiencyReportData.sewing || efficiencyReportData.inspection100
   );
@@ -350,14 +390,32 @@ export default function EfficiencyDashboard() {
               />
             </div>
 
-            <button
-              onClick={() => handleApplyFilter(startDate, endDate)}
-              disabled={isLoading}
-              className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-full md:w-40 self-end 
-                ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-            >
-              {isLoading ? 'Searching...' : 'Search'}
-            </button>
+            {/* Button Container for Search and Export */}
+            <div className="flex space-x-4 w-full md:w-auto self-end">
+              {/* Search Button (Existing) */}
+              <button
+                onClick={() => handleApplyFilter(startDate, endDate)}
+                disabled={isLoading || isExporting}
+                className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-full md:w-40 self-end 
+                  ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+              >
+                {isLoading ? 'Searching...' : 'Search'}
+              </button>
+
+              {/* 🆕 Export Button */}
+              <button
+                onClick={handleExport}
+                disabled={isLoading || isExporting || !hasDataForRange}
+                className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-full md:w-40 self-end 
+                  ${(isExporting || !hasDataForRange) 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 text-white hover:bg-green-700'}`
+                }
+              >
+                {isExporting ? 'Exporting...' : 'Export'}
+              </button>
+            </div>
+            
           </div>
 
           {message && (
