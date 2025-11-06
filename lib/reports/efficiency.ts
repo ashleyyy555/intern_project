@@ -57,9 +57,10 @@ export async function getSewingEfficiencyReport(input: { startDate: Date; endDat
     const m4 = d(r.m4_workers_ot);
     const m5 = d(r.m5_operating_mins_ot);     // Decimal
 
-    // Rated: (m2*m1) + [ m4*m1*(m5/m3) ]  ; if m3==0 ratio=0
-    const ratio = m3.eq(0) ? new D(0) : m5.div(m3);
-    const ratedOutput = m2.mul(m1).add(m4.mul(m1).mul(ratio));
+    // Rated: (m2*m1) + [ m4*m1*(m5/720) ]
+    const ratedOutput = m2.mul(m1).add(
+      m4.mul(m1).mul(m5).div(new D(720))
+    );
 
     // Operating time (mins): (m2*m3) + (m4*m5)
     const operatingTime = m2.mul(m3).add(m4.mul(m5));
@@ -127,9 +128,10 @@ export async function getInspection100EfficiencyReport(input: { startDate: Date;
     // Weighted target per person (panel 85%, duffel 4%, blower 11%)
     const targetWeighted = m1.mul(0.85).add(m6.mul(0.04)).add(m7.mul(0.11));
 
-    // Rated: (m2 * targetWeighted) + (m4 * targetWeighted * (m5/m3))
-    const ratio = m3.eq(0) ? new D(0) : m5.div(m3);
-    const ratedOutput = m2.mul(targetWeighted).add(ratio.mul(m4).mul(targetWeighted));
+    // Rated: (m2 * targetWeighted) + (m4 * targetWeighted * (m5/720))
+    const ratedOutput = m2
+      .mul(targetWeighted)
+      .add(m4.mul(targetWeighted).mul(m5).div(new D(720)));
 
     // Operating time (mins): (m2*m3) + (m4*m5)
     const operatingTime = m2.mul(m3).add(m4.mul(m5));
