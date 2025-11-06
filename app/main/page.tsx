@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ExcelJS from "exceljs";
 
 // --- Helper Functions ---
-const getISODate = (d) => d.toISOString().split("T")[0];
+const getISODate = (d: Date) => d.toISOString().split("T")[0];
 
 const getDefaultDates = () => {
   const today = new Date();
@@ -17,7 +18,7 @@ const getDefaultDates = () => {
 };
 
 // --- API Fetch Functions ---
-const fetchCuttingReport = async (startDateObj, endDateObj) => {
+const fetchCuttingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
   const endDateISO = getISODate(endDateObj);
 
@@ -37,7 +38,7 @@ const fetchCuttingReport = async (startDateObj, endDateObj) => {
   return response.json();
 };
 
-const fetchSewingReport = async (startDateObj, endDateObj) => {
+const fetchSewingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
   const endDateISO = getISODate(endDateObj);
 
@@ -57,7 +58,7 @@ const fetchSewingReport = async (startDateObj, endDateObj) => {
   return response.json();
 };
 
-const fetchInspectionReport = async (startDateObj, endDateObj) => {
+const fetchInspectionReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
   const endDateISO = getISODate(endDateObj);
 
@@ -77,7 +78,7 @@ const fetchInspectionReport = async (startDateObj, endDateObj) => {
   return response.json();
 };
 
-const fetchPackingReport = async (startDateObj, endDateObj) => {
+const fetchPackingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
   const endDateISO = getISODate(endDateObj);
 
@@ -100,25 +101,21 @@ const fetchPackingReport = async (startDateObj, endDateObj) => {
 // --------------------------------------------------------------------------------
 // --- Table Component: CUTTING (Updated to show all panelIDs, including zero totals) ---
 // --------------------------------------------------------------------------------
-// NOTE: In a real app, ALL_PANEL_IDS should be fetched from an API or config.
-// Hardcoding a list for demonstration purposes.
-const ALL_PANEL_IDS = ["Circular Fabric", "Heavy Duty Fabric", "Light Duty Fabric", "Type 110", "Type 148",]; // Example list
+const ALL_PANEL_IDS = ["Circular Fabric", "Heavy Duty Fabric", "Light Duty Fabric", "Type 110", "Type 148"]; // Example list
 
-function CuttingTotalTable({ data }) {
+function CuttingTotalTable({ data }: { data: any }) {
   const TITLE = "Cutting Report";
 
-  // 1. Aggregate data from the report (only includes IDs with > 0 pcs)
-  const panelsByIDFromData = (data?.panels || []).reduce((acc, p) => {
+  const panelsByIDFromData = (data?.panels || []).reduce((acc: Record<string, number>, p: any) => {
     const idLabel = p.panelId;
     acc[idLabel] = (acc[idLabel] || 0) + p.pcs;
     return acc;
   }, {});
 
-  // 2. Combine the full list of ALL_PANEL_IDS with the aggregated data
-  const finalPanelsByID = ALL_PANEL_IDS.reduce((acc, panelId) => {
-    acc[panelId] = panelsByIDFromData[panelId] || 0; // Use 0 if not in fetched data
+  const finalPanelsByID = ALL_PANEL_IDS.reduce((acc: Record<string, number>, panelId) => {
+    acc[panelId] = panelsByIDFromData[panelId] || 0;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
   const dataKeys = Object.keys(finalPanelsByID);
 
@@ -132,8 +129,7 @@ function CuttingTotalTable({ data }) {
     );
   }
 
-  // Calculate Grand Total across all existing data
-  const grandTotal = (data?.panels || []).reduce((a, p) => a + p.pcs, 0);
+  const grandTotal = (data?.panels || []).reduce((a: number, p: any) => a + p.pcs, 0);
 
   return (
     <>
@@ -183,35 +179,31 @@ function CuttingTotalTable({ data }) {
   );
 }
 
-
 // --------------------------------------------------------------------------------
 // --- Table Component: SEWING (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
-function SewingTotalTable({ dailyData }) {
+function SewingTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
   const TITLE = "Sewing";
 
-  const totalsByOpTypeFromData = {};
+  const totalsByOpTypeFromData: Record<string, number> = {};
   let overallGrandTotal = 0;
 
   if (dailyData?.dailyByOpTypeRaw) {
-    Object.values(dailyData.dailyByOpTypeRaw).forEach((dateData) => {
-      Object.entries(dateData).forEach(([opType, total]) => {
-        if (OP_TYPES.includes(opType) && typeof total === "number") {
-          totalsByOpTypeFromData[opType] = (totalsByOpTypeFromData[opType] || 0) + total;
+    Object.values(dailyData.dailyByOpTypeRaw).forEach((dateData: any) => {
+      Object.entries(dateData as Record<string, number>).forEach(([op, total]) => {
+        if (OP_TYPES.includes(op) && typeof total === "number") {
+          totalsByOpTypeFromData[op] = (totalsByOpTypeFromData[op] || 0) + total;
           overallGrandTotal += total;
         }
       });
     });
   }
 
-  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
-  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+  const finalTotalsByOpType = OP_TYPES.reduce((acc: Record<string, number>, opType) => {
     acc[opType] = totalsByOpTypeFromData[opType] || 0;
     return acc;
-  }, {});
-
-  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
+  }, {} as Record<string, number>);
 
   return (
     <>
@@ -263,27 +255,29 @@ function SewingTotalTable({ dailyData }) {
 // --------------------------------------------------------------------------------
 // --- Table Component: INSPECTION (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
-function InspectionTotalTable({ dailyData }) {
+function InspectionTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["IH", "S", "OS", "B"];
   const TITLE = "Inspection";
 
-  // Aggregate only the data that was fetched
-  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce((acc, row) => {
-    if (OP_TYPES.includes(row.opType)) {
-      acc[row.opType] = (acc[row.opType] || 0) + row.total;
-    }
-    return acc;
-  }, {});
+  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce(
+    (acc: Record<string, number>, row: any) => {
+      if (OP_TYPES.includes(row.opType)) {
+        acc[row.opType] = (acc[row.opType] || 0) + row.total;
+      }
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
-  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
-  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+  const finalTotalsByOpType = OP_TYPES.reduce((acc: Record<string, number>, opType) => {
     acc[opType] = totalsByOpTypeFromData[opType] || 0;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce((sum, total) => sum + total, 0);
-
-  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
+  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce(
+    (sum: number, total: number) => sum + total,
+    0
+  );
 
   return (
     <>
@@ -335,27 +329,29 @@ function InspectionTotalTable({ dailyData }) {
 // --------------------------------------------------------------------------------
 // --- Table Component: PACKING (Updated to show 0 totals) ---
 // --------------------------------------------------------------------------------
-function PackingTotalTable({ dailyData }) {
+function PackingTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
   const TITLE = "Packing";
 
-  // Aggregate only the data that was fetched
-  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce((acc, row) => {
-    if (OP_TYPES.includes(row.opType)) {
-      acc[row.opType] = (acc[row.opType] || 0) + row.total;
-    }
-    return acc;
-  }, {});
+  const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce(
+    (acc: Record<string, number>, row: any) => {
+      if (OP_TYPES.includes(row.opType)) {
+        acc[row.opType] = (acc[row.opType] || 0) + row.total;
+      }
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
-  // Combine the full list of OP_TYPES with the aggregated data, defaulting to 0
-  const finalTotalsByOpType = OP_TYPES.reduce((acc, opType) => {
+  const finalTotalsByOpType = OP_TYPES.reduce((acc: Record<string, number>, opType) => {
     acc[opType] = totalsByOpTypeFromData[opType] || 0;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
-  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce((sum, total) => sum + total, 0);
-
-  // No 'No data available' check, table renders with 0s if overallGrandTotal is 0
+  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce(
+    (sum: number, total: number) => sum + total,
+    0
+  );
 
   return (
     <>
@@ -418,12 +414,12 @@ export default function DashboardPage() {
   });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  // Report states
-  const [cuttingReportData, setCuttingReportData] = useState(null);
-  const [sewingReportData, setSewingReportData] = useState(null);
-  const [inspectionReportData, setInspectionReportData] = useState(null);
-  const [packingReportData, setPackingReportData] = useState(null);
+  const [cuttingReportData, setCuttingReportData] = useState<any>(null);
+  const [sewingReportData, setSewingReportData] = useState<any>(null);
+  const [inspectionReportData, setInspectionReportData] = useState<any>(null);
+  const [packingReportData, setPackingReportData] = useState<any>(null);
 
   useEffect(() => {
     handleApplyFilter(defaultStart, defaultEnd);
@@ -469,7 +465,7 @@ export default function DashboardPage() {
       setLastAppliedRange({ start, end });
 
       setMessage(`Data loaded successfully for ${start} to ${end}.`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fetch error:", error);
       setMessage(`Error fetching data: ${error.message}`);
     } finally {
@@ -477,6 +473,221 @@ export default function DashboardPage() {
       setTimeout(() => setMessage(""), 3000);
     }
   };
+
+  // Export a single "Summary" sheet: columns = [Section, Item, Total]
+  // - No "Type" column
+  // - Merge the "Section" column for each section block
+  const handleExportClick = async () => {
+    const safeNum = (v: any) => (typeof v === "number" && isFinite(v) ? v : 0);
+  
+    try {
+      setIsExporting(true);
+      setMessage("Preparing data for export...");
+    
+      // Build a unified array of rows in the order: Cutting, Sewing, Inspection, Packing
+      type Row = { section: string; item: string; total: number; isGrand?: boolean };
+      const rows: Row[] = [];
+    
+      // -------- CUTTING (Section=Cutting, Item=Panel ID) --------
+      {
+        const section = "Cutting";
+        const panels = cuttingReportData?.panels ?? [];
+        const agg: Record<string, number> = {};
+        panels.forEach((p: any) => {
+          const id = String(p.panelId ?? "");
+          agg[id] = (agg[id] ?? 0) + safeNum(p.pcs);
+        });
+      
+        // If you want zero rows for known panel IDs, uncomment:
+        // ALL_PANEL_IDS.forEach(id => { agg[id] = agg[id] ?? 0; });
+      
+        Object.entries(agg).forEach(([panelId, total]) => {
+          rows.push({ section, item: panelId, total });
+        });
+      
+        const grand = panels.reduce((a: number, p: any) => a + safeNum(p.pcs), 0);
+        rows.push({ section, item: "GRAND TOTAL", total: grand, isGrand: true });
+      }
+    
+      // -------- SEWING (Section=Sewing, Item=Operation Type) --------
+      {
+        const section = "Sewing";
+        const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
+        const raw = sewingReportData?.dailyByOpTypeRaw ?? {};
+        const totals: Record<string, number> = {};
+        let overall = 0;
+      
+        Object.values(raw).forEach((dateData: any) => {
+          Object.entries(dateData as Record<string, number>).forEach(([op, t]) => {
+            if (OP_TYPES.includes(op)) {
+              const n = safeNum(t);
+              totals[op] = (totals[op] ?? 0) + n;
+              overall += n;
+            }
+          });
+        });
+      
+        // include all OP_TYPES even if zero
+        OP_TYPES.forEach(op => {
+          rows.push({ section, item: op, total: safeNum(totals[op]) });
+        });
+        rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
+      }
+    
+      // -------- INSPECTION (Section=Inspection, Item=Operation Type) --------
+      {
+        const section = "Inspection";
+        const OP_TYPES = ["IH", "S", "OS", "B"];
+        const arr = inspectionReportData?.daily?.byOpType ?? [];
+        const totals: Record<string, number> = {};
+        let overall = 0;
+      
+        arr.forEach((r: any) => {
+          if (OP_TYPES.includes(r.opType)) {
+            const n = safeNum(r.total);
+            totals[r.opType] = (totals[r.opType] ?? 0) + n;
+            overall += n;
+          }
+        });
+      
+        OP_TYPES.forEach(op => {
+          rows.push({ section, item: op, total: safeNum(totals[op]) });
+        });
+        rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
+      }
+    
+      // -------- PACKING (Section=Packing, Item=Operation Type) --------
+      {
+        const section = "Packing";
+        const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
+        const arr = packingReportData?.daily?.byOpType ?? [];
+        const totals: Record<string, number> = {};
+        let overall = 0;
+      
+        arr.forEach((r: any) => {
+          if (OP_TYPES.includes(r.opType)) {
+            const n = safeNum(r.total);
+            totals[r.opType] = (totals[r.opType] ?? 0) + n;
+            overall += n;
+          }
+        });
+      
+        OP_TYPES.forEach(op => {
+          rows.push({ section, item: op, total: safeNum(totals[op]) });
+        });
+        rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
+      }
+    
+      // ================= Build Excel (ONE sheet) =================
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Summary");
+    
+      // Header row (no Type column)
+      const header = ["Section", "Item", "Total"];
+      ws.addRow(header);
+    
+      // Track start/end row numbers for each contiguous section block (for merging)
+      type Block = { section: string; start: number; end: number };
+      const blocks: Block[] = [];
+    
+      let currentBlock: Block | null = null;
+      const headerRowNumber = 1;
+      let currentRowNumber = headerRowNumber;
+    
+      // Add data rows, noting block boundaries
+      rows.forEach((r, idx) => {
+        // Each addRow increments row count; determine new row number first:
+        const rowNum = ws.rowCount + 1; // next row index
+        ws.addRow([r.section, r.item, r.total]);
+      
+        // Bold GRAND TOTAL lines
+        if (r.isGrand) {
+          ws.getRow(rowNum).font = { bold: true };
+        }
+      
+        // Manage blocks
+        if (!currentBlock) {
+          currentBlock = { section: r.section, start: rowNum, end: rowNum };
+        } else if (currentBlock.section === r.section) {
+          currentBlock.end = rowNum;
+        } else {
+          blocks.push(currentBlock);
+          currentBlock = { section: r.section, start: rowNum, end: rowNum };
+        }
+        currentRowNumber = rowNum;
+      });
+      if (currentBlock) blocks.push(currentBlock);
+    
+      // Column widths
+      ws.columns = [
+        { width: 16 }, // Section
+        { width: 30 }, // Item
+        { width: 14 }, // Total
+      ];
+    
+      // Header styling
+      const headerRow = ws.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFDFEBFF" }, // light blue
+      };
+    
+      // Merge Section column for each contiguous block and clear repeated labels
+      blocks.forEach(({ section, start, end }) => {
+        if (start < end) {
+          ws.mergeCells(start, 1, end, 1); // merge col 1 (Section) from start..end
+          const topCell = ws.getCell(start, 1);
+          topCell.value = section;
+          topCell.alignment = { vertical: "middle", horizontal: "center" };
+        } else {
+          // single row block: just keep the value as-is
+          const cell = ws.getCell(start, 1);
+          cell.value = section;
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        }
+      });
+    
+      // Borders + number format
+      const setThinBorder = (cell: ExcelJS.Cell) => {
+        cell.border = {
+          top:    { style: "thin" },
+          left:   { style: "thin" },
+          bottom: { style: "thin" },
+          right:  { style: "thin" },
+        };
+      };
+      ws.eachRow((row, r) => {
+        row.eachCell((cell) => setThinBorder(cell));
+        if (r > 1) row.getCell(3).numFmt = "#,##0"; // Total column
+      });
+    
+      // Download
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const fname = `Production_Summary_${lastAppliedRange.start}_to_${lastAppliedRange.end}.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
+    
+      setMessage("Export complete!");
+    } catch (err: any) {
+      console.error(err);
+      setMessage(`Error exporting: ${err?.message || "Unknown error"}`);
+    } finally {
+      setIsExporting(false);
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
+
 
   const loadingPlaceholder = (
     <div className="mt-8 text-center text-gray-300 border-2 border-dashed border-gray-300 p-12 rounded-lg h-56 flex items-center justify-center">
@@ -503,7 +714,7 @@ export default function DashboardPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className={`${inputStyle} w-full md:w-44`}
+                className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 w-full md:w-44"
               />
             </div>
 
@@ -516,18 +727,32 @@ export default function DashboardPage() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className={`${inputStyle} w-full md:w-44`}
+                className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 w-full md:w-44"
               />
             </div>
 
-            <button
-              onClick={() => handleApplyFilter(startDate, endDate)}
-              disabled={isLoading}
-              className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-full md:w-40 self-end 
-                ${isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-            >
-              {isLoading ? "Searching..." : "Search"}
-            </button>
+            {/* Adjusted Button Group Container */}
+            <div className="flex space-x-3 w-full md:w-80 self-end">
+              {/* Search Button */}
+              <button
+                onClick={() => handleApplyFilter(startDate, endDate)}
+                disabled={isLoading || isExporting}
+                className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-1/2 
+                  ${isLoading || isExporting ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+              >
+                {isLoading ? "Searching..." : "Search"}
+              </button>
+
+              {/* Export Button (Excel Green) */}
+              <button
+                onClick={handleExportClick}
+                disabled={isLoading || isExporting}
+                className={`px-6 py-2 font-semibold rounded-lg shadow-lg transition duration-300 w-1/2 
+                  ${isLoading || isExporting ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
+              >
+                {isExporting ? "Exporting..." : "Export"}
+              </button>
+            </div>
           </div>
 
           {message && (
@@ -535,7 +760,7 @@ export default function DashboardPage() {
               className={`mt-4 p-3 rounded-lg text-sm font-medium ${
                 message.startsWith("Error")
                   ? "bg-red-100 text-red-700"
-                  : message.startsWith("Fetching")
+                  : message.startsWith("Fetching") || message.startsWith("Preparing")
                   ? "bg-yellow-100 text-yellow-700"
                   : "bg-blue-100 text-blue-700"
               }`}
@@ -555,24 +780,24 @@ export default function DashboardPage() {
         {/* Tables */}
         <div className="grid grid-cols-1 gap-8">
           {/* 1. CUTTING TABLE */}
-          <div className={cardStyle}>
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 min-h-fit">
             {isLoading ? loadingPlaceholder : <CuttingTotalTable data={cuttingReportData} />}
           </div>
 
           {/* 2. SEWING TABLE */}
-          <div className={cardStyle}>
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 min-h-fit">
             {isLoading ? loadingPlaceholder : <SewingTotalTable dailyData={sewingReportData} />}
           </div>
 
           {/* 3. INSPECTION TABLE */}
-          <div className={cardStyle}>
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 min-h-fit">
             {isLoading ? loadingPlaceholder : (
               <InspectionTotalTable dailyData={inspectionReportData?.daily} />
             )}
           </div>
 
           {/* 4. PACKING TABLE */}
-          <div className={cardStyle}>
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 min-h-fit">
             {isLoading ? loadingPlaceholder : (
               <PackingTotalTable dailyData={packingReportData?.daily} />
             )}

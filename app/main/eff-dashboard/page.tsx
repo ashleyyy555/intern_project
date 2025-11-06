@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ExcelJS from 'exceljs';
 
 // --- Helper Functions ---
 const getISODate = (d) => d.toISOString().split('T')[0];
@@ -37,17 +38,12 @@ const fetchEfficiencyReportData = async (startDateObj, endDateObj) => {
 // --- Calculation and Table Components ---
 // --------------------------------------------------------------------------------
 
-// --- Common Column Width Classes ---
-// Defined once to ensure consistency
-const PHASE_COL_WIDTH = "w-[250px]"; // Increased width slightly to ensure label fits
+const PHASE_COL_WIDTH = "w-[250px]";
 const RATED_COL_WIDTH = "w-[150px]";
 const ACTUAL_COL_WIDTH = "w-[180px]";
 const EFFICIENCY_COL_WIDTH = "w-[150px]";
 
-
-/**
- * Hook for calculating Efficiency (Rated Output vs. Actual Output)
- */
+/** Efficiency (Rated vs Actual) */
 function useEfficiencyMetricsAndInput(rawReportData, actualOutputs) {
   return useMemo(() => {
     if (!rawReportData) return [];
@@ -68,8 +64,8 @@ function useEfficiencyMetricsAndInput(rawReportData, actualOutputs) {
       return {
         phase: config.name,
         id: config.id,
-        ratedOutput: ratedOutput,
-        actualOutput: actualOutput,
+        ratedOutput,
+        actualOutput,
         efficiency: efficiency.toFixed(2),
       };
     });
@@ -85,9 +81,6 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
     setActualOutputs(prev => ({ ...prev, [id]: num }));
   }, [setActualOutputs]);
 
-  const hasData = metrics.some(m => m.ratedOutput > 0);
-
-
   return (
     <>
       <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center">
@@ -97,19 +90,15 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-blue-50">
             <tr>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                 Production Phase
               </th>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${RATED_COL_WIDTH}`}>
                 Rated Output
               </th>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${ACTUAL_COL_WIDTH}`}>
                 Actual Output (Input)
               </th>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider ${EFFICIENCY_COL_WIDTH} bg-blue-700`}>
                 Efficiency (%)
               </th>
@@ -152,16 +141,7 @@ function EfficiencySummaryTable({ rawReportData, actualOutputs, setActualOutputs
   );
 }
 
-// --------------------------------------------------------------------------------
-// --- Operating Time Summary Table (Updated to match API: ratedOperatingTimeMins vs actualOperatingTimeMins) ---
-// --------------------------------------------------------------------------------
-
-/**
- * Hook for calculating Utilization (Rated Time vs. Actual Time)
- * It now uses:
- * - Rated Operating Time: rawReportData[key].ratedOperatingTimeMins (Calculated Theoretical Max)
- * - Actual Operating Time: rawReportData[key].actualOperatingTimeMins (Recorded Time)
- */
+/** Operating Time (Rated vs Actual) */
 function useOperatingTimeMetrics(rawReportData) {
   return useMemo(() => {
     if (!rawReportData) return [];
@@ -174,7 +154,6 @@ function useOperatingTimeMetrics(rawReportData) {
     return phasesConfig.map(config => {
       const apiData = rawReportData[config.apiKey] || {};
 
-      // Using the correctly named and calculated fields from the new API structure
       const ratedTime = Math.round(apiData.ratedOperatingTimeMins || 0);
       const actualTime = Math.round(apiData.actualOperatingTimeMins || 0);
 
@@ -191,12 +170,9 @@ function useOperatingTimeMetrics(rawReportData) {
   }, [rawReportData]);
 }
 
-function OperatingTimeSummaryTable({ rawReportData }) { 
+function OperatingTimeSummaryTable({ rawReportData }) {
   const metrics = useOperatingTimeMetrics(rawReportData);
 
-  const hasData = metrics.some(m => m.actualTime > 0 || m.ratedTime > 0);
-  
-  // 🔄 Changed header color classes from 'purple' to 'blue'
   return (
     <div className="mt-8">
       <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center">
@@ -204,22 +180,17 @@ function OperatingTimeSummaryTable({ rawReportData }) {
       </h2>
       <div className="overflow-x-auto shadow-md rounded-lg border border-gray-100">
         <table className="min-w-full divide-y divide-gray-200">
-          {/* 🔄 Changed header background from 'purple-50' to 'blue-50' and text from 'purple-700' to 'blue-700' */}
           <thead className="bg-blue-50">
             <tr>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider border-r border-gray-300 ${PHASE_COL_WIDTH}`}>
                 Production Phase
               </th>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${RATED_COL_WIDTH}`}>
                 Rated Operating Time
               </th>
-              {/* 🔄 Applied consistent width */}
               <th className={`px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider ${ACTUAL_COL_WIDTH}`}>
                 Actual Operating Time
               </th>
-              {/* 🔄 Applied consistent width and background color */}
               <th className={`px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider ${EFFICIENCY_COL_WIDTH} bg-blue-700`}>
                 Utilization (%)
               </th>
@@ -237,7 +208,6 @@ function OperatingTimeSummaryTable({ rawReportData }) {
                 <td className={`px-6 py-4 whitespace-nowrap text-lg text-gray-700 font-semibold text-right align-middle ${ACTUAL_COL_WIDTH}`}>
                   {metric.actualTime.toLocaleString()}
                 </td>
-                {/* 🔄 Applied the same conditional text color logic as Efficiency */}
                 <td className={`px-6 py-4 whitespace-nowrap text-2xl font-extrabold text-right align-middle ${EFFICIENCY_COL_WIDTH} ${
                   parseFloat(metric.utilization) >= 95
                     ? 'text-green-600'
@@ -257,7 +227,7 @@ function OperatingTimeSummaryTable({ rawReportData }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Main Dashboard Integration (Cleanup) ---
+// --- Main Dashboard Integration ---
 // --------------------------------------------------------------------------------
 
 export default function EfficiencyDashboard() {
@@ -272,7 +242,7 @@ export default function EfficiencyDashboard() {
   const [actualOutputs, setActualOutputs] = useState({});
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false); 
+  const [isExporting, setIsExporting] = useState(false);
 
   const initializeStates = useCallback((data) => {
     if (!data) return;
@@ -323,6 +293,7 @@ export default function EfficiencyDashboard() {
     }
   };
 
+  // ===== Excel Export (single sheet, two sections, borders, formats) =====
   const handleExport = async () => {
     if (!efficiencyReportData) {
       setMessage('Error: Please search and load data before exporting.');
@@ -333,11 +304,122 @@ export default function EfficiencyDashboard() {
     try {
       setIsExporting(true);
       setMessage('Preparing export file...');
-      
-      // Simulate export process
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-      setMessage('Data successfully exported! (Placeholder)');
+      const phases = [
+        { id: 'sewing', name: 'Sewing', key: 'sewing' },
+        { id: 'inspection100', name: '100% Inspection', key: 'inspection100' },
+      ];
+
+      const safeNum = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+      const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDFEBFF' } };
+      const setThinBorder = (cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      };
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Efficiency Summary');
+
+      // Title
+      ws.addRow([`Efficiency Summary (${lastAppliedRange.start} to ${lastAppliedRange.end})`]);
+      ws.mergeCells(1, 1, 1, 4);
+      const titleRow = ws.getRow(1);
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      titleRow.height = 22;
+
+      ws.addRow([]); // blank
+
+      // ---- Section 1: Production Efficiency (Output) ----
+      const s1TitleRowNum = ws.rowCount + 1;
+      ws.addRow(['Production Efficiency (Output)']);
+      ws.mergeCells(s1TitleRowNum, 1, s1TitleRowNum, 4);
+      const s1TitleRow = ws.getRow(s1TitleRowNum);
+      s1TitleRow.font = { bold: true };
+      s1TitleRow.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      const s1Header = ws.addRow(['Phase', 'Rated Output', 'Actual Output (Input)', 'Efficiency %']);
+      s1Header.font = { bold: true };
+      s1Header.alignment = { vertical: 'middle', horizontal: 'center' };
+      s1Header.fill = headerFill;
+
+      phases.forEach(p => {
+        const rated = Math.round(safeNum(efficiencyReportData?.[p.key]?.ratedOutput));
+        const actual = Math.round(safeNum(actualOutputs?.[p.id]));
+        const effDecimal = rated > 0 ? actual / rated : 0;
+        ws.addRow([p.name, rated, actual, effDecimal]);
+      });
+
+      // Style/table 1
+      for (let r = s1Header.number; r <= ws.rowCount; r++) {
+        const row = ws.getRow(r);
+        row.eachCell(c => setThinBorder(c));
+        if (r > s1Header.number) {
+          row.getCell(2).numFmt = '#,##0';
+          row.getCell(3).numFmt = '#,##0';
+          row.getCell(4).numFmt = '0.00%';
+        }
+      }
+
+      ws.addRow([]); // blank
+
+      // ---- Section 2: Operating Time & Utilization ----
+      const s2TitleRowNum = ws.rowCount + 1;
+      ws.addRow(['Operating Time and Utilization (Minutes)']);
+      ws.mergeCells(s2TitleRowNum, 1, s2TitleRowNum, 4);
+      const s2TitleRow = ws.getRow(s2TitleRowNum);
+      s2TitleRow.font = { bold: true };
+      s2TitleRow.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      const s2Header = ws.addRow(['Phase', 'Rated Time (mins)', 'Actual Time (mins)', 'Utilization %']);
+      s2Header.font = { bold: true };
+      s2Header.alignment = { vertical: 'middle', horizontal: 'center' };
+      s2Header.fill = headerFill;
+
+      phases.forEach(p => {
+        const ratedTime = Math.round(safeNum(efficiencyReportData?.[p.key]?.ratedOperatingTimeMins));
+        const actualTime = Math.round(safeNum(efficiencyReportData?.[p.key]?.actualOperatingTimeMins));
+        const utilDecimal = ratedTime > 0 ? actualTime / ratedTime : 0;
+        ws.addRow([p.name, ratedTime, actualTime, utilDecimal]);
+      });
+
+      // Style/table 2
+      for (let r = s2Header.number; r <= ws.rowCount; r++) {
+        const row = ws.getRow(r);
+        row.eachCell(c => setThinBorder(c));
+        if (r > s2Header.number) {
+          row.getCell(2).numFmt = '#,##0';
+          row.getCell(3).numFmt = '#,##0';
+          row.getCell(4).numFmt = '0.00%';
+        }
+      }
+
+      // Column widths
+      ws.columns = [
+        { width: 24 }, // Phase
+        { width: 20 }, // Rated
+        { width: 24 }, // Actual
+        { width: 16 }, // %
+      ];
+
+      // Download
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const fname = `Efficiency_Summary_${lastAppliedRange.start}_to_${lastAppliedRange.end}.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setMessage('Export complete!');
     } catch (error) {
       console.error("Export error:", error);
       setMessage(`Error during export: ${error.message}`);
@@ -346,7 +428,6 @@ export default function EfficiencyDashboard() {
       setTimeout(() => setMessage(''), 3000);
     }
   };
-
 
   const hasDataForRange = efficiencyReportData && (
     efficiencyReportData.sewing || efficiencyReportData.inspection100
@@ -392,7 +473,7 @@ export default function EfficiencyDashboard() {
 
             {/* Button Container for Search and Export */}
             <div className="flex space-x-4 w-full md:w-auto self-end">
-              {/* Search Button (Existing) */}
+              {/* Search */}
               <button
                 onClick={() => handleApplyFilter(startDate, endDate)}
                 disabled={isLoading || isExporting}
@@ -402,7 +483,7 @@ export default function EfficiencyDashboard() {
                 {isLoading ? 'Searching...' : 'Search'}
               </button>
 
-              {/* 🆕 Export Button */}
+              {/* Export */}
               <button
                 onClick={handleExport}
                 disabled={isLoading || isExporting || !hasDataForRange}
@@ -415,7 +496,6 @@ export default function EfficiencyDashboard() {
                 {isExporting ? 'Exporting...' : 'Export'}
               </button>
             </div>
-            
           </div>
 
           {message && (

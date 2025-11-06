@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import ExcelJS from "exceljs";
 import { searchData } from "@/app/actions/search";
 import {
   PACKING_KEYS, PACKING_HEADERS, PACKING_FIELD_MAP,
@@ -344,48 +345,173 @@ export default function SearchPage() {
     }
   };
 
-  // NEW: Export to CSV/Excel
-  const handleExport = () => {
+    // NEW: Export to styled Excel using exceljs
+  const handleExport = async () => {
     if (searchResults.length === 0) {
       alert("No data to export. Please run a search first.");
       return;
     }
 
     setIsExporting(true);
+    setErrorMessage("");
+
     try {
-      const headers = getHeaders(currentSection).map(h => h.label);
-      const dataRows = searchResults.map(row => getRowData(row, currentSection));
+      const headersDef = getHeaders(currentSection); // [{key,label}, ...]
+      const headerLabels = headersDef.map(h => h.label);
 
-      // Combine headers and data rows
-      const csvContent = [
-        headers.join(","),
-        ...dataRows.map(row => row.map(cell => {
-          // Wrap in quotes and escape internal quotes for CSV safety
-          const s = String(cell).replace(/"/g, '""');
-          return `"${s}"`;
-        }).join(","))
-      ].join("\n");
+      // Helper utils
+      const wb = new ExcelJS.Workbook();
+      const sheetName = (sectionOptions.find(s => s.value === currentSection)?.label || "Results")
+        .replace(/[\\/?*[\]:]/g, " ");
+      const ws = wb.addWorksheet(sheetName);
 
-      // Create a blob and trigger download
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const setThinBorder = (cell: ExcelJS.Cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      };
+      const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDFEBFF" } };
+
+      // Title
+      const title = `${sheetName} (${startDate} to ${endDate})`;
+      ws.addRow([title]);
+      ws.mergeCells(1, 1, 1, headerLabels.length);
+      const titleRow = ws.getRow(1);
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { vertical: "middle", horizontal: "center" };
+      titleRow.height = 22;
+
+      // spacer
+      ws.addRow([]);
+
+      // ---- Common function to add a full bordered table block ----
+      // Will ALWAYS paint borders for a perfect rectangle, even for empty cells.
+      const addTable = (subtitle: string, headers: string[], rows: any[][]) => {
+        // Subtitle
+        const subtitleRowNum = ws.rowCount + 1;
+        ws.addRow([subtitle]);
+        ws.mergeCells(subtitleRowNum, 1, subtitleRowNum, headers.length);
+        const subRow = ws.getRow(subtitleRowNum);
+        subRow.font = { bold: true };
+        subRow.alignment = { vertical: "middle", horizontal: "left" };
+
+        // Header
+        const headerRow = ws.addRow(headers);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { vertical: "middle", horizontal: "center" };
+        headerRow.eachCell((cell: ExcelJS.Cell) => {
+          (cell as any).fill = headerFill;
+        });
+
+
+
+        // Normalize/pad each row to the header length
+        const colCount = headers.length;
+        rows.forEach((r) => {
+          const row = Array.isArray(r) ? r.slice(0, colCount) : [];
+          while (row.length < colCount) row.push("");
+          ws.addRow(row);
+        });
+
+        // Apply borders + number formats on the exact rectangle
+        const firstRow = headerRow.number;
+        const lastRow = ws.rowCount;
+        for (let r = firstRow; r <= lastRow; r++) {
+          for (let c = 1; c <= colCount; c++) {
+            const cell = ws.getCell(r, c);
+            setThinBorder(cell);
+            // Number formats: integers vs decimals
+            if (typeof cell.value === "number") {
+              if (Number.isInteger(cell.value)) cell.numFmt = "#,##0";
+              else cell.numFmt = "#,##0.####";
+            }
+          }
+        }
+
+        // spacer under this block
+        ws.addRow([]);
+      };
+
+      // ---- Special handling for Operation Time (split into two tables by SectionType) ----
+      if (currentSection === "operationtime") {
+        // Build custom headers: remove "Section Type" column because we split by it.
+        // getHeaders("operationtime") returns:
+        // [ Month/Year, Section Type, Operator ID, D1...D31 ]
+        const opHeadersDef = getHeaders("operationtime");
+        const opHeaderLabels = opHeadersDef
+          .filter(h => h.label !== "Section Type") // drop this column
+          .map(h => h.label);
+
+        // Build rows -> [YearMonth, OperatorId, D1..D31]
+        const buildOpRows = (sectionTypeFilter: "Sewing" | "100% Inspection") => {
+          return searchResults
+            .filter(row => (row.SectionType || "") === sectionTypeFilter)
+            .map(row => {
+              const mapped = getRowData(row, "operationtime");
+              // mapped includes [YearMonth, SectionType, OperatorId, D1..D31]
+              // Remove index 1 (SectionType)
+              const cleaned = [mapped[0], mapped[2], ...mapped.slice(3)];
+              return cleaned;
+            });
+        };
+
+        const sewingRows = buildOpRows("Sewing");
+        const inspRows = buildOpRows("100% Inspection");
+
+        addTable("Sewing", opHeaderLabels, sewingRows);
+        addTable("100% Inspection", opHeaderLabels, inspRows);
+
+      } else {
+        // ---- Default single-table export for all other sections ----
+        const dataRows = searchResults.map(row => {
+          const arr = getRowData(row, currentSection);
+          // pad to header length so we can border empty cells too
+          const fixed = arr.slice(0, headerLabels.length);
+          while (fixed.length < headerLabels.length) fixed.push("");
+          return fixed;
+        });
+
+        addTable(sheetName, headerLabels, dataRows);
+      }
+
+      // Auto-fit column widths across the entire worksheet (all blocks)
+      const colCount = ws.getRow(3)?.cellCount || headerLabels.length; // rough estimate after title+spacer
+      for (let c = 1; c <= colCount; c++) {
+        let max = 10;
+        ws.eachRow((row) => {
+          const v = row.getCell(c).value;
+          if (v === null || v === undefined) return;
+          const str = typeof v === "object" ? String((v as any).text ?? v) : String(v);
+          max = Math.max(max, str.length);
+        });
+        ws.getColumn(c).width = Math.min(45, Math.max(10, max + 2));
+      }
+
+      // Download
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const fname = `${currentSection}_${startDate}_to_${endDate}.xlsx`;
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      a.click();
+      URL.revokeObjectURL(url);
 
-      link.setAttribute("href", url);
-      const fileName = `${currentSection}_${startDate}_to_${endDate}.csv`;
-      link.setAttribute("download", fileName);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-    } catch (error) {
-      console.error("Error during export:", error);
-      setErrorMessage("Export failed. Check the console for details.");
+    } catch (err: any) {
+      console.error("Error during export:", err);
+      setErrorMessage(`Export failed: ${err?.message || "Unknown error"}`);
     } finally {
       setIsExporting(false);
     }
   };
+
+
 
 
   const headers = getHeaders(currentSection);
