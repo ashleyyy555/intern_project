@@ -1,22 +1,35 @@
-// sign in page
+// app/auth/signin/page.tsx
 
 import { login } from "@/lib/auth";
 import Link from "next/link";
 
-type SearchParams = {
-  error?: string;
-  username?: string;
-  registered?: string; // "1" if just registered
-};
+type ParamsShape = { [key: string]: string | string[] | undefined };
+
+function first(param: string | string[] | undefined): string | undefined {
+  return Array.isArray(param) ? param[0] : param;
+}
+
+function safeDecode(v: string | undefined): string | undefined {
+  if (!v) return v;
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return v; // already decoded or not URI-encoded
+  }
+}
 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  // In Next.js App Router, searchParams is async and can include arrays
+  searchParams: Promise<ParamsShape>;
 }) {
-  const error = searchParams?.error;
-  const prefill = searchParams?.username || "";
-  const registered = searchParams?.registered === "1";
+  const params = await searchParams;
+
+  const errorRaw = first(params.error);
+  const error = safeDecode(errorRaw);
+  const prefill = first(params.username) ?? "";
+  const registered = first(params.registered) === "1";
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center">
@@ -31,9 +44,10 @@ export default async function SignInPage({
             Registration successful. You can sign in now.
           </div>
         )}
+
         {error && (
           <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded">
-            {decodeURIComponent(error)}
+            {error}
           </div>
         )}
 
@@ -41,9 +55,7 @@ export default async function SignInPage({
           <input type="hidden" name="callbackUrl" value="/main" />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Username
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Username</label>
             <input
               name="username"
               defaultValue={prefill}
@@ -55,9 +67,7 @@ export default async function SignInPage({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
               name="password"
               type="password"
