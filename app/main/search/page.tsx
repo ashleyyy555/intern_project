@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import ExcelJS from "exceljs";
+import type { Worksheet, Row, Cell } from "exceljs";
 import { searchData } from "@/app/actions/search";
 import {
   PACKING_KEYS, PACKING_HEADERS, PACKING_FIELD_MAP,
@@ -10,7 +11,6 @@ import {
   OPERATION_KEYS, OPERATION_HEADERS, OPERATION_FIELD_MAP,
   EFFICIENCY_SEWING_KEYS, EFFICIENCY_SEWING_HEADERS, EFFICIENCY_SEWING_FIELD_MAP,
   EFFICIENCY_INSPECTION100_KEYS, EFFICIENCY_INSPECTION100_HEADERS, EFFICIENCY_INSPECTION100_FIELD_MAP,
-  // Cutting
   CUTTING_KEYS, CUTTING_HEADERS, CUTTING_FIELD_MAP,
 } from "@/lib/inspectionFields";
 
@@ -25,9 +25,7 @@ const PANEL_ID_OPTIONS = [
   "Type 148",
 ] as const;
 
-// (panelType is now FREE-TEXT — no constant or dropdown)
-
-// ---- NEW: Operation type / Section type dropdown options (keep in sync with server) ----
+// ---- Operation type / Section type dropdown options (keep in sync with server) ----
 const SEWING_OPERATION_TYPES = [
   "SP1","SP2","PC","SB","SPP","SS","SSP","SD","ST",
 ] as const;
@@ -55,6 +53,22 @@ const sectionOptions = [
 
 // Helper: today in YYYY-MM-DD
 const getCurrentDate = () => new Date().toISOString().split("T")[0];
+
+/** Format a JS Date to YYYY-MM-DD in Asia/Kuala_Lumpur (stable string for Excel merge) */
+function formatDateKL(d: Date | string | number | null | undefined): string {
+  if (!d) return "N/A";
+  const date = new Date(d);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const y = parts.find(p => p.type === "year")?.value ?? "0000";
+  const m = parts.find(p => p.type === "month")?.value ?? "01";
+  const day = parts.find(p => p.type === "day")?.value ?? "01";
+  return `${y}-${m}-${day}`;
+}
 
 // ---- helpers to reuse your maps (for edit modal) ----
 const getKeysForSection = (section: string) => {
@@ -103,7 +117,6 @@ const getNumericColsForSection = (section: string) => {
       CUTTING_FIELD_MAP.C9, // actualOutput (int)
     ]);
   }
-
   if (section === "packing") return new Set(Object.values(PACKING_FIELD_MAP));
   if (section === "100%") return new Set(Object.values(INSPECTION_FIELD_MAP));
   if (section === "sewing") return new Set(Object.values(SEWING_FIELD_MAP));
@@ -111,6 +124,36 @@ const getNumericColsForSection = (section: string) => {
   // efficiency sections are mixed; keep as text unless you define granular sets
   return new Set<string>();
 };
+
+/** -------- Safe public-API auto-fit helper (no ws._rows) -------- */
+function autoFitColumns(ws: Worksheet, headerLabels: string[] = []) {
+  const maxColumns = Math.max(ws.columnCount, headerLabels.length);
+  const widths = Array.from({ length: maxColumns }, () => 10);
+
+  // Consider headers too
+  headerLabels.forEach((label, idx) => {
+    const len = String(label ?? "").length + 2;
+    widths[idx] = Math.max(widths[idx], len);
+  });
+
+  // Scan all rows/cells via public iterators
+  ws.eachRow({ includeEmpty: true }, (row: Row) => {
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const text =
+        (cell as any).text ??
+        (cell.value == null ? "" : String(cell.value));
+      const idx = colNumber - 1;
+      if (idx >= 0 && idx < widths.length) {
+        widths[idx] = Math.max(widths[idx], text.length + 2);
+      }
+    });
+  });
+
+  // Apply min/max caps
+  widths.forEach((w, i) => {
+    ws.getColumn(i + 1).width = Math.min(45, Math.max(10, w));
+  });
+}
 
 export default function SearchPage() {
   // filter state
@@ -149,7 +192,6 @@ export default function SearchPage() {
         key,
         label: CUTTING_HEADERS[key],
       }));
-      // Cutting uses operationDate like other daily tables
       return [{ key: "operationDate", label: "Date" }, ...cuttingHeaders];
     }
 
@@ -212,7 +254,6 @@ export default function SearchPage() {
     ];
   };
 
-
   // Map a DB row to table cells (reused for both display and export)
   const getRowData = (row: any, sec: string) => {
     let date = "N/A";
@@ -221,9 +262,9 @@ export default function SearchPage() {
     if (sec === "operationtime") {
       date = row.yearMonth || "N/A";
     } else {
-      // Use operationDate everywhere else (fallback only if you truly have legacy)
+      // Use operationDate everywhere else; format KL-stable for merging
       const d = row.operationDate || row.entry_date;
-      date = d ? new Date(d).toLocaleDateString() : "N/A";
+      date = d ? formatDateKL(d) : "N/A";
     }
 
     if (sec === "cutting") {
@@ -299,13 +340,13 @@ export default function SearchPage() {
     }
     if (sec === "efficiency-sewing") {
       return [
-        new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+        formatDateKL(row.operationDate || row.entry_date),
         ...EFFICIENCY_SEWING_KEYS.map((k) => row[EFFICIENCY_SEWING_FIELD_MAP[k]]),
       ];
     }
     if (sec === "efficiency-100") {
       return [
-        new Date(row.operationDate || row.entry_date).toLocaleDateString(),
+        formatDateKL(row.operationDate || row.entry_date),
         row[EFFICIENCY_INSPECTION100_FIELD_MAP.M1], row[EFFICIENCY_INSPECTION100_FIELD_MAP.M6], row[EFFICIENCY_INSPECTION100_FIELD_MAP.M7],
         row[EFFICIENCY_INSPECTION100_FIELD_MAP.M2], row[EFFICIENCY_INSPECTION100_FIELD_MAP.M3], row[EFFICIENCY_INSPECTION100_FIELD_MAP.M4],
         row[EFFICIENCY_INSPECTION100_FIELD_MAP.M5],
@@ -345,7 +386,7 @@ export default function SearchPage() {
     }
   };
 
-    // NEW: Export to styled Excel using exceljs
+  // NEW: Export to styled Excel using exceljs
   const handleExport = async () => {
     if (searchResults.length === 0) {
       alert("No data to export. Please run a search first.");
@@ -365,7 +406,7 @@ export default function SearchPage() {
         .replace(/[\\/?*[\]:]/g, " ");
       const ws = wb.addWorksheet(sheetName);
 
-      const setThinBorder = (cell: ExcelJS.Cell) => {
+      const setThinBorder = (cell: Cell) => {
         cell.border = {
           top: { style: "thin" },
           left: { style: "thin" },
@@ -373,7 +414,39 @@ export default function SearchPage() {
           right: { style: "thin" },
         };
       };
-      const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDFEBFF" } };
+      const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDFEBFF" } } as const;
+
+      // Merge helper: merge equal values in a column for contiguous blocks
+      const mergeEqualCellsInColumn = (
+        colIndex: number,
+        startRow: number,
+        endRow: number
+      ): void => {
+        if (endRow <= startRow) return;
+        let blockStart = startRow;
+        let prev: any = ws.getCell(startRow, colIndex).value; // can be string | number | null | undefined
+
+        const same = (a: any, b: any) => {
+          const ax = a instanceof Date ? formatDateKL(a) : String(a ?? "");
+          const bx = b instanceof Date ? formatDateKL(b) : String(b ?? "");
+          return ax === bx;
+        };
+
+        for (let r = startRow + 1; r <= endRow + 1; r++) {
+          const val = r <= endRow ? ws.getCell(r, colIndex).value : Symbol("end");
+          const isSame = r <= endRow && same(val, prev);
+          if (!isSame) {
+            const blockEnd = r - 1;
+            if (blockEnd > blockStart) {
+              ws.mergeCells(blockStart, colIndex, blockEnd, colIndex);
+              const topCell = ws.getCell(blockStart, colIndex);
+              topCell.alignment = { vertical: "middle", horizontal: "center" };
+            }
+            blockStart = r;
+            prev = val;
+          }
+        }
+      };
 
       // Title
       const title = `${sheetName} (${startDate} to ${endDate})`;
@@ -388,7 +461,6 @@ export default function SearchPage() {
       ws.addRow([]);
 
       // ---- Common function to add a full bordered table block ----
-      // Will ALWAYS paint borders for a perfect rectangle, even for empty cells.
       const addTable = (subtitle: string, headers: string[], rows: any[][]) => {
         // Subtitle
         const subtitleRowNum = ws.rowCount + 1;
@@ -402,11 +474,11 @@ export default function SearchPage() {
         const headerRow = ws.addRow(headers);
         headerRow.font = { bold: true };
         headerRow.alignment = { vertical: "middle", horizontal: "center" };
-        headerRow.eachCell((cell: ExcelJS.Cell) => {
+        headerRow.eachCell((cell) => {
           (cell as any).fill = headerFill;
         });
 
-
+        const firstDataRow = headerRow.number + 1;
 
         // Normalize/pad each row to the header length
         const colCount = headers.length;
@@ -416,30 +488,27 @@ export default function SearchPage() {
           ws.addRow(row);
         });
 
-        // Apply borders + number formats on the exact rectangle
-        const firstRow = headerRow.number;
-        const lastRow = ws.rowCount;
-        for (let r = firstRow; r <= lastRow; r++) {
+        const lastDataRow = ws.rowCount;
+
+        // Full rectangle borders + number formats
+        for (let r = headerRow.number; r <= lastDataRow; r++) {
           for (let c = 1; c <= colCount; c++) {
             const cell = ws.getCell(r, c);
             setThinBorder(cell);
-            // Number formats: integers vs decimals
             if (typeof cell.value === "number") {
-              if (Number.isInteger(cell.value)) cell.numFmt = "#,##0";
-              else cell.numFmt = "#,##0.####";
+              cell.numFmt = Number.isInteger(cell.value) ? "#,##0" : "#,##0.####";
             }
           }
         }
 
         // spacer under this block
         ws.addRow([]);
+
+        return { firstDataRow, lastDataRow, colCount };
       };
 
       // ---- Special handling for Operation Time (split into two tables by SectionType) ----
       if (currentSection === "operationtime") {
-        // Build custom headers: remove "Section Type" column because we split by it.
-        // getHeaders("operationtime") returns:
-        // [ Month/Year, Section Type, Operator ID, D1...D31 ]
         const opHeadersDef = getHeaders("operationtime");
         const opHeaderLabels = opHeadersDef
           .filter(h => h.label !== "Section Type") // drop this column
@@ -452,7 +521,6 @@ export default function SearchPage() {
             .map(row => {
               const mapped = getRowData(row, "operationtime");
               // mapped includes [YearMonth, SectionType, OperatorId, D1..D31]
-              // Remove index 1 (SectionType)
               const cleaned = [mapped[0], mapped[2], ...mapped.slice(3)];
               return cleaned;
             });
@@ -466,29 +534,54 @@ export default function SearchPage() {
 
       } else {
         // ---- Default single-table export for all other sections ----
-        const dataRows = searchResults.map(row => {
+        const isHundred = (s: string) =>
+          s === "100%" || s.toLowerCase() === "inspection" || s.toLowerCase().includes("100");
+
+        const shouldMergeDates =
+          currentSection === "cutting" ||
+          currentSection === "sewing"  ||
+          isHundred(currentSection);
+
+
+        // Sort rows by KL date (and then by operationType, then id) so equal dates are contiguous
+        const sorted = shouldMergeDates
+          ? [...searchResults].sort((a, b) => {
+              const da = formatDateKL(a.operationDate || a.entry_date || a.date);
+              const db = formatDateKL(b.operationDate || b.entry_date || b.date);
+              if (da < db) return -1;
+              if (da > db) return 1;
+
+              const ota = String(a.operationType || "");
+              const otb = String(b.operationType || "");
+              if (ota < otb) return -1;
+              if (ota > otb) return 1;
+
+              const ia = String(a.id || "");
+              const ib = String(b.id || "");
+              if (ia < ib) return -1;
+              if (ia > ib) return 1;
+              return 0;
+            })
+          : searchResults;
+
+        const dataRows = sorted.map(row => {
           const arr = getRowData(row, currentSection);
-          // pad to header length so we can border empty cells too
           const fixed = arr.slice(0, headerLabels.length);
           while (fixed.length < headerLabels.length) fixed.push("");
           return fixed;
         });
 
-        addTable(sheetName, headerLabels, dataRows);
+        // Build the table
+        const { firstDataRow, lastDataRow } = addTable(sheetName, headerLabels, dataRows);
+
+        // Merge equal dates in the first column for these sections
+        if (shouldMergeDates && lastDataRow >= firstDataRow) {
+          mergeEqualCellsInColumn(1, firstDataRow, lastDataRow);
+        }
       }
 
-      // Auto-fit column widths across the entire worksheet (all blocks)
-      const colCount = ws.getRow(3)?.cellCount || headerLabels.length; // rough estimate after title+spacer
-      for (let c = 1; c <= colCount; c++) {
-        let max = 10;
-        ws.eachRow((row) => {
-          const v = row.getCell(c).value;
-          if (v === null || v === undefined) return;
-          const str = typeof v === "object" ? String((v as any).text ?? v) : String(v);
-          max = Math.max(max, str.length);
-        });
-        ws.getColumn(c).width = Math.min(45, Math.max(10, max + 2));
-      }
+      // Auto-fit
+      autoFitColumns(ws, headerLabels);
 
       // Download
       const buf = await wb.xlsx.writeBuffer();
@@ -510,9 +603,6 @@ export default function SearchPage() {
       setIsExporting(false);
     }
   };
-
-
-
 
   const headers = getHeaders(currentSection);
   const finalHeaders = searchResults.length > 0
@@ -621,7 +711,6 @@ export default function SearchPage() {
           >
             {isSearching ? "Searching..." : "Search"}
           </button>
-          {/* NEW Export Button */}
           <button
             onClick={handleExport}
             disabled={isSearching || isExporting || searchResults.length === 0}
@@ -670,7 +759,7 @@ export default function SearchPage() {
                           </td>
                         ))}
 
-                        {/* Actions (only visible when results exist) */}
+                        {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex gap-2">
                             <button

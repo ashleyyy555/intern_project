@@ -91,7 +91,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.cutting.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' }, 
+        orderBy: { operationDate: 'asc' }, 
       });
       return { data: results, section: 'cutting', fieldMap: CUTTING_FIELD_MAP }; 
     } catch (error) {
@@ -107,7 +107,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.inspection.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' },
+        orderBy: { operationDate: 'asc' },
       });
       return { data: results, section: '100%', fieldMap: INSPECTION_FIELD_MAP };
     } catch (error) {
@@ -122,7 +122,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.packing.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' },
+        orderBy: { operationDate: 'asc' },
       });
       return { data: results, section: 'packing', fieldMap: PACKING_FIELD_MAP };
     } catch (error) {
@@ -137,7 +137,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.sewing.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' },
+        orderBy: { operationDate: 'asc' },
       });
       return { data: results, section: 'sewing', fieldMap: SEWING_FIELD_MAP };
     } catch (error) {
@@ -158,7 +158,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.operationTime.findMany({
         where: operationTimeWhereClause,
-        orderBy: { OperatorId: 'desc' },
+        orderBy: { OperatorId: 'asc' },
       });
       return { data: results, section: 'operationtime', fieldMap: OPERATION_FIELD_MAP };
     } catch (error) {
@@ -173,7 +173,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.efficiencySewing.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' },
+        orderBy: { operationDate: 'asc' },
       });
       return { data: results, section: 'efficiency-sewing' };
     } catch (error) {
@@ -188,7 +188,7 @@ export async function searchData(formData: {
     try {
       const results = await prisma.efficiencyInspection100.findMany({
         where: dateWhereClause,
-        orderBy: { operationDate: 'desc' },
+        orderBy: { operationDate: 'asc' },
       });
       return { data: results, section: 'efficiency-100' };
     } catch (error) {
