@@ -125,6 +125,13 @@ const getNumericColsForSection = (section: string) => {
   return new Set<string>();
 };
 
+const formatDisplayDate = (isoDateStr: string) => {
+  if (!isoDateStr) return "";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${year}/${month}/${day}`;
+};
+
+
 /** -------- Safe public-API auto-fit helper (no ws._rows) -------- */
 function autoFitColumns(ws: Worksheet, headerLabels: string[] = []) {
   const maxColumns = Math.max(ws.columnCount, headerLabels.length);
@@ -656,31 +663,68 @@ export default function SearchPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           {/* Dates */}
           <div className="md:col-span-2 flex space-x-4">
-            <div className="flex-1">
-              <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="start-date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className={baseInputStyle}
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end-date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className={baseInputStyle}
-              />
-            </div>
-          </div>
+ {/* --- START DATE --- */}
+<div className="flex flex-col space-y-1 w-full md:w-auto">
+  <label htmlFor="start-date-picker" className="text-sm font-semibold text-gray-700">
+    Start Date
+  </label>
+  <div className="relative">
+    {/* Hidden real date input */}
+    <input
+      id="start-date-picker"
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
+
+    {/* Fake visible display */}
+    <div
+      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                 text-center font-medium select-none"
+      onClick={() => {
+        // Open the hidden date picker
+        const realInput = document.getElementById("start-date-picker") as HTMLInputElement | null;
+        if (realInput) realInput.showPicker?.();
+      }}
+    >
+      {formatDisplayDate(startDate)}
+    </div>
+  </div>
+</div>
+
+{/* --- END DATE --- */}
+<div className="flex flex-col space-y-1 w-full md:w-auto">
+  <label htmlFor="end-date-picker" className="text-sm font-semibold text-gray-700">
+    End Date
+  </label>
+  <div className="relative">
+    {/* Hidden real date input */}
+    <input
+      id="end-date-picker"
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
+
+    {/* Fake visible display */}
+    <div
+      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                 text-center font-medium select-none"
+      onClick={() => {
+        // Open the hidden date picker
+        const realInput = document.getElementById("end-date-picker") as HTMLInputElement | null;
+        if (realInput) realInput.showPicker?.();
+      }}
+    >
+      {formatDisplayDate(endDate)}
+    </div>
+  </div>
+</div>
+</div>
 
           {/* Section */}
           <div className="md:col-span-1">

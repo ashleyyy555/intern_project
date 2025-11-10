@@ -95,19 +95,36 @@ export default function PackingPage() {
       )}
 
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 space-y-6">
-        {/* Date */}
+        {/* Date with custom display */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center space-x-3">
             <label htmlFor="date" className="text-lg font-semibold mb-4">
               Date:
             </label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={baseInputStyle}
-            />
+
+            <div className="relative w-full">
+              {/* Hidden real input (keeps backend value format) */}
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+
+              {/* Visible display box */}
+              <div
+                className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                           focus-within:ring-2 focus-within:ring-indigo-500 w-full text-gray-800
+                           text-center font-medium select-none"
+                onClick={() => {
+                  const realInput = document.getElementById("date") as HTMLInputElement | null;
+                  realInput?.showPicker?.();
+                }}
+              >
+                {date.split("-").join("/")} {/* YYYY/MM/DD display */}
+              </div>
+            </div>
           </div>
         </div>
 

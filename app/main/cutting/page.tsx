@@ -7,37 +7,35 @@ type StatusMessage = { type: "success" | "error"; message: string };
 // Utility to get today's date in YYYY-MM-DD format
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
+// 👉 Helper to display date in DD/MM/YYYY format
+const formatDisplayDate = (isoDateStr: string) => {
+  if (!isoDateStr) return "";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${year}/${month}/${day}`;
+};
+
 export default function CuttingPage() {
   const [date, setDate] = useState(getTodayDate());
   const [panelId, setPanelId] = useState("");
-  // 🔄 Changed default state from "Laminated" to an empty string for the new input
   const [panelType, setPanelType] = useState(""); 
-
-  // ✅ Construction split into 2 inputs (sent separately)
   const [constructionA, setConstructionA] = useState("");
   const [constructionB, setConstructionB] = useState("");
-
-  // ✅ Denier → Meterage
   const [meterage, setMeterage] = useState("");
-
   const [weight, setWeight] = useState("");
   const [widthSize, setWidthSize] = useState("");
   const [lengthSize, setLengthSize] = useState("");
   const [actualOutput, setActualOutput] = useState("");
-
   const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
   const [saving, setSaving] = useState(false);
 
   const baseInputStyleCentered =
     "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-center";
-
   const baseInputStyleLeft =
     "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500";
 
   const resetForm = () => {
     setDate(getTodayDate());
     setPanelId("");
-    // 🔄 Reset to empty string
     setPanelType(""); 
     setConstructionA("");
     setConstructionB("");
@@ -99,7 +97,7 @@ export default function CuttingPage() {
       const dataToSave = {
         date,
         panelId,
-        panelType, // ➡️ panelType is now a string from the input
+        panelType,
         constructionA: parseFloat(constructionA),
         constructionB: parseFloat(constructionB),
         meterage: parseFloat(meterage),
@@ -165,13 +163,30 @@ export default function CuttingPage() {
             <label htmlFor="date" className="text-lg font-semibold whitespace-nowrap">
               Date:
             </label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={baseInputStyleLeft}
-            />
+
+            {/* 📅 Hidden real date input */}
+            <div className="relative w-full">
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+
+              {/* 👁️ Visible formatted display */}
+              <div
+                className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                           focus-within:ring-2 focus-within:ring-indigo-500 text-gray-800
+                           text-center font-medium select-none"
+                onClick={() => {
+                  const realInput = document.getElementById("date") as HTMLInputElement | null;
+                  realInput?.showPicker?.();
+                }}
+              >
+                {formatDisplayDate(date)}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -196,27 +211,24 @@ export default function CuttingPage() {
             </select>
           </div>
 
-          {/* 🔄 Type Input (Was a Dropdown) */}
           <div className="flex items-center space-x-3">
             <label htmlFor="panelType" className="text-lg font-semibold whitespace-nowrap">
               Panel:
             </label>
             <input
               id="panelType"
-              type="text" // ➡️ Changed to text input
-              placeholder="e.g., Top Panel, Body" // 💡 Added placeholder
+              type="text"
+              placeholder="e.g., Top Panel, Body"
               value={panelType}
               onChange={(e) => setPanelType(e.target.value)}
               className={baseInputStyleLeft}
             />
           </div>
-          {/* ❌ Removed the Dropdown and added an Input */}
         </div>
 
-        {/* Cutting Measurements Row 1 */}
+        {/* Cutting Measurements */}
         <div className="mb-4 pt-4">
           <div className="grid grid-cols-3 gap-4">
-            {/* ✅ Compact UI for Construction */}
             <div className="space-y-1">
               <label
                 htmlFor="constructionA"
@@ -281,7 +293,7 @@ export default function CuttingPage() {
           </div>
         </div>
 
-        {/* Cutting Measurements Row 2 */}
+        {/* Second row of measurements */}
         <div className="mb-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">

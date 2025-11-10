@@ -25,6 +25,13 @@ const ROWS: InspectionKey[][] = (() => {
   return rows;
 })();
 
+/** Helper to display date as DD/MM/YYYY */
+const formatDisplayDate = (isoDateStr: string) => {
+  if (!isoDateStr) return "";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${year}/${month}/${day}`;
+};
+
 export default function InspectionPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [operationType, setOperationType] = useState("Inhouse"); // UI strings are saved directly
@@ -115,19 +122,38 @@ export default function InspectionPage() {
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 space-y-6">
         {/* Date + Operation Type */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* DATE with custom display */}
           <div className="flex items-center space-x-3">
             <label htmlFor="date" className="text-lg font-semibold mb-4">
               Date:
             </label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={baseInputStyle}
-            />
+
+            <div className="relative w-full">
+              {/* Hidden real input (keeps backend value format) */}
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+
+              {/* Visible display box */}
+              <div
+                className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                           focus-within:ring-2 focus-within:ring-indigo-500 w-full text-gray-800
+                           text-center font-medium select-none"
+                onClick={() => {
+                  const realInput = document.getElementById("date") as HTMLInputElement | null;
+                  realInput?.showPicker?.();
+                }}
+              >
+                {formatDisplayDate(date)}
+              </div>
+            </div>
           </div>
 
+          {/* OPERATION TYPE */}
           <div className="flex items-center space-x-3">
             <label htmlFor="op-type" className="text-lg font-semibold mb-4">
               Operating Type:

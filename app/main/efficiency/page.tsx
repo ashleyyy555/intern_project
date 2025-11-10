@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 
 // Operation types
 type OperationType = "Sewing" | "100% Inspection";
@@ -25,6 +25,13 @@ const METRICS: Record<MetricKey, { label: string; decimal: boolean }> = {
 const LABOR_KEYS: MetricKey[] = ["M2", "M3"];
 const OVERTIME_KEYS: MetricKey[] = ["M4", "M5"];
 const TARGET_KEYS: MetricKey[] = ["M1", "M6", "M7"];
+
+/** Helper to display date as YYYY/MM/DD */
+const formatDisplayDate = (isoDateStr: string) => {
+  if (!isoDateStr) return "";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${year}/${month}/${day}`;
+};
 
 export default function EfficiencyPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -95,7 +102,28 @@ export default function EfficiencyPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center space-x-3">
             <label htmlFor="date" className="text-lg font-semibold mb-4">Date:</label>
-            <input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} className={baseInputStyle} />
+            <div className="relative w-full">
+              {/* Hidden real input */}
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              {/* Visible display */}
+              <div
+                className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                           focus-within:ring-2 focus-within:ring-indigo-500 w-full text-gray-800
+                           text-center font-medium select-none"
+                onClick={() => {
+                  const realInput = document.getElementById("date") as HTMLInputElement | null;
+                  realInput?.showPicker?.();
+                }}
+              >
+                {formatDisplayDate(date)}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center space-x-3">

@@ -17,6 +17,13 @@ const getDefaultDates = () => {
   return { defaultStart, defaultEnd };
 };
 
+const formatDisplayDate = (isoDateStr: string) => {
+  if (!isoDateStr) return "";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${year}/${month}/${day}`;
+};
+
+
 // --- API Fetch Functions ---
 const fetchCuttingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
@@ -705,31 +712,68 @@ export default function DashboardPage() {
         {/* Date Range Filter */}
         <div className="bg-white p-6 rounded-xl shadow-xl border border-indigo-100">
           <div className="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0 md:space-x-6">
-            <div className="flex flex-col space-y-1 w-full md:w-auto">
-              <label htmlFor="start-date-picker" className="text-sm font-semibold text-gray-700">
-                Start Date
-              </label>
-              <input
-                id="start-date-picker"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 w-full md:w-44"
-              />
-            </div>
+ {/* --- START DATE --- */}
+<div className="flex flex-col space-y-1 w-full md:w-auto">
+  <label htmlFor="start-date-picker" className="text-sm font-semibold text-gray-700">
+    Start Date
+  </label>
+  <div className="relative">
+    {/* Hidden real date input */}
+    <input
+      id="start-date-picker"
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
 
-            <div className="flex flex-col space-y-1 w-full md:w-auto">
-              <label htmlFor="end-date-picker" className="text-sm font-semibold text-gray-700">
-                End Date
-              </label>
-              <input
-                id="end-date-picker"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 w-full md:w-44"
-              />
-            </div>
+    {/* Fake visible display */}
+    <div
+      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                 text-center font-medium select-none"
+      onClick={() => {
+        // Open the hidden date picker
+        const realInput = document.getElementById("start-date-picker") as HTMLInputElement | null;
+        if (realInput) realInput.showPicker?.();
+      }}
+    >
+      {formatDisplayDate(startDate)}
+    </div>
+  </div>
+</div>
+
+{/* --- END DATE --- */}
+<div className="flex flex-col space-y-1 w-full md:w-auto">
+  <label htmlFor="end-date-picker" className="text-sm font-semibold text-gray-700">
+    End Date
+  </label>
+  <div className="relative">
+    {/* Hidden real date input */}
+    <input
+      id="end-date-picker"
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="absolute inset-0 opacity-0 cursor-pointer"
+    />
+
+    {/* Fake visible display */}
+    <div
+      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                 text-center font-medium select-none"
+      onClick={() => {
+        // Open the hidden date picker
+        const realInput = document.getElementById("end-date-picker") as HTMLInputElement | null;
+        if (realInput) realInput.showPicker?.();
+      }}
+    >
+      {formatDisplayDate(endDate)}
+    </div>
+  </div>
+</div>
+
 
             {/* Adjusted Button Group Container */}
             <div className="flex space-x-3 w-full md:w-80 self-end">

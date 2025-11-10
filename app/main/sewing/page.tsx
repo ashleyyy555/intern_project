@@ -12,7 +12,7 @@ export default function SewingPage() {
   // Date in YYYY-MM-DD
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
 
-  // IMPORTANT: default to a valid option (used by API validation)
+  // Default operation type
   const [operationType, setOperationType] = useState("SP1");
 
   // Counts
@@ -40,7 +40,7 @@ export default function SewingPage() {
     setDataEntries((prev) => ({ ...prev, [name]: numericValue }));
   };
 
-  // Explicit order so future refactors don't break the grid
+  // Explicit order
   const order = [
     "C1","C2","C3","C4", "C5","C6","C7","C8", "C9","C10","C11","C12",
     "S1","S2","S3","S4", "S5","S6","S7","S8",
@@ -49,23 +49,12 @@ export default function SewingPage() {
     "ST1","ST2",
   ];
 
-  // Group into rows of 4 (last row will have 2)
+  // Group into rows of 4 (last row has 2)
   const rows: string[][] = [];
   for (let i = 0; i < order.length; i += 4) rows.push(order.slice(i, i + 4));
 
   const resetEntries = () =>
-    setDataEntries({
-      C1: "", C2: "", C3: "", C4: "",
-      C5: "", C6: "", C7: "", C8: "",
-      C9: "", C10: "", C11: "", C12: "",
-      S1: "", S2: "", S3: "", S4: "",
-      S5: "", S6: "", S7: "", S8: "",
-      S9: "", S10: "", S11: "", S12: "",
-      S13: "", S14: "", S15: "", S16: "",
-      S17: "", S18: "", S19: "", S20: "",
-      S21: "", S22: "", S23: "", S24: "",
-      ST1: "", ST2: "",
-    });
+    setDataEntries(Object.fromEntries(Object.keys(dataEntries).map(k => [k, ""])));
 
   const handleSave = async () => {
     setStatusMessage(null);
@@ -75,9 +64,9 @@ export default function SewingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date,                 // "YYYY-MM-DD"
-          operationType,        // eg "SP1"
-          dataEntries,          // all the C*, S*, ST*
+          date,          // backend keeps YYYY-MM-DD
+          operationType,
+          dataEntries,
         }),
       });
 
@@ -125,17 +114,35 @@ export default function SewingPage() {
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 space-y-6">
         {/* Row 1: Date and Operation Type */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Date picker with visible YYYY/MM/DD */}
           <div className="flex items-center space-x-3">
             <label htmlFor="date" className="text-lg font-semibold mb-4">
               Date:
             </label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={BASE_INPUT}
-            />
+
+            <div className="relative w-full">
+              {/* Hidden real input for backend */}
+              <input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+
+              {/* Visible box with YYYY/MM/DD */}
+              <div
+                className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                           focus-within:ring-2 focus-within:ring-indigo-500 w-full text-gray-800
+                           text-center font-medium select-none"
+                onClick={() => {
+                  const realInput = document.getElementById("date") as HTMLInputElement | null;
+                  realInput?.showPicker?.();
+                }}
+              >
+                {date.split("-").join("/")}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center space-x-3">
