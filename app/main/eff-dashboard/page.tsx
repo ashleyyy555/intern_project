@@ -309,11 +309,11 @@ export default function EfficiencyDashboard() {
     color: { argb: BLACK }, // black
   };
 
-  const fillSolid = (argb: string) => ({
-    type: "pattern" as const,
+const fillSolid = (argb: string) => ({
+    type: "pattern",
     pattern: "solid",
     fgColor: { argb },
-  });
+  }) as ExcelJS.FillPattern;
   const setRangeBorders = (
     ws: ExcelJS.Worksheet,
     r1: number,

@@ -281,8 +281,8 @@ function InspectionTotalTable({ dailyData }: { dailyData: any }) {
     return acc;
   }, {} as Record<string, number>);
 
-  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce(
-    (sum: number, total: number) => sum + total,
+  const overallGrandTotal = (Object.values(totalsByOpTypeFromData) as number[]).reduce(
+    (sum, total) => sum + total,
     0
   );
 
@@ -355,8 +355,8 @@ function PackingTotalTable({ dailyData }: { dailyData: any }) {
     return acc;
   }, {} as Record<string, number>);
 
-  const overallGrandTotal = Object.values(totalsByOpTypeFromData).reduce(
-    (sum: number, total: number) => sum + total,
+  const overallGrandTotal = (Object.values(totalsByOpTypeFromData) as number[]).reduce(
+    (sum, total) => sum + total,
     0
   );
 
