@@ -4,30 +4,45 @@ import React, { useState } from "react";
 
 type StatusMessage = { type: "success" | "error"; message: string } | null;
 
+// Allowed operation types (keeps select + state typed)
+type OperationType = "SP1" | "SP2" | "PC" | "SB" | "SPP" | "SS" | "SSP" | "SD" | "ST";
+
+// Keep the labels as a typed tuple so we can derive the key type
+const ORDER = [
+  "C1","C2","C3","C4","C5","C6","C7","C8","C9","C10","C11","C12",
+  "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12",
+  "S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24",
+  "ST1","ST2",
+] as const;
+
+type EntryKey = (typeof ORDER)[number];
+
 const BASE_INPUT =
   "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500";
 const ENTRY_INPUT = "p-2 border border-gray-300 rounded-lg w-full text-center";
+
+// Safe error → message helper
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Unknown error";
+  }
+}
 
 export default function SewingPage() {
   // Date in YYYY-MM-DD
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
 
   // Default operation type
-  const [operationType, setOperationType] = useState("SP1");
+  const [operationType, setOperationType] = useState<OperationType>("SP1");
 
   // Counts
-  const [dataEntries, setDataEntries] = useState<Record<string, string>>({
-    C1: "", C2: "", C3: "", C4: "",
-    C5: "", C6: "", C7: "", C8: "",
-    C9: "", C10: "", C11: "", C12: "",
-    S1: "", S2: "", S3: "", S4: "",
-    S5: "", S6: "", S7: "", S8: "",
-    S9: "", S10: "", S11: "", S12: "",
-    S13: "", S14: "", S15: "", S16: "",
-    S17: "", S18: "", S19: "", S20: "",
-    S21: "", S22: "", S23: "", S24: "",
-    ST1: "", ST2: "",
-  });
+  const [dataEntries, setDataEntries] = useState<Record<EntryKey, string>>(
+    Object.fromEntries(ORDER.map((k) => [k, ""])) as Record<EntryKey, string>
+  );
 
   // UI state
   const [statusMessage, setStatusMessage] = useState<StatusMessage>(null);
@@ -37,24 +52,19 @@ export default function SewingPage() {
   const handleEntryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numericValue = value.replace(/[^0-9]/g, "");
-    setDataEntries((prev) => ({ ...prev, [name]: numericValue }));
+    // name is string; assert it's one of our typed keys
+    if (ORDER.includes(name as EntryKey)) {
+      setDataEntries((prev) => ({ ...prev, [name as EntryKey]: numericValue }));
+    }
   };
 
-  // Explicit order
-  const order = [
-    "C1","C2","C3","C4", "C5","C6","C7","C8", "C9","C10","C11","C12",
-    "S1","S2","S3","S4", "S5","S6","S7","S8",
-    "S9","S10","S11","S12", "S13","S14","S15","S16",
-    "S17","S18","S19","S20", "S21","S22","S23","S24",
-    "ST1","ST2",
-  ];
-
+  // Explicit order already defined in ORDER
   // Group into rows of 4 (last row has 2)
-  const rows: string[][] = [];
-  for (let i = 0; i < order.length; i += 4) rows.push(order.slice(i, i + 4));
+  const rows: EntryKey[][] = [];
+  for (let i = 0; i < ORDER.length; i += 4) rows.push(ORDER.slice(i, i + 4) as EntryKey[]);
 
   const resetEntries = () =>
-    setDataEntries(Object.fromEntries(Object.keys(dataEntries).map(k => [k, ""])));
+    setDataEntries(Object.fromEntries(ORDER.map((k) => [k, ""])) as Record<EntryKey, string>);
 
   const handleSave = async () => {
     setStatusMessage(null);
@@ -65,7 +75,7 @@ export default function SewingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date,          // backend keeps YYYY-MM-DD
-          operationType,
+          operationType, // now strongly typed
           dataEntries,
         }),
       });
@@ -74,7 +84,7 @@ export default function SewingPage() {
         let msg = "Failed to save data on the server.";
         try {
           const json = await res.json();
-          if (json?.message) msg = json.message;
+          if (json?.message) msg = json.message as string;
         } catch {}
         throw new Error(msg);
       }
@@ -84,10 +94,10 @@ export default function SewingPage() {
         message: "Data successfully saved! Ready for next entry.",
       });
       resetEntries();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatusMessage({
         type: "error",
-        message: `Submission failed: ${err?.message || "Unknown error"}`,
+        message: `Submission failed: ${getErrorMessage(err)}`,
       });
     } finally {
       setSaving(false);
@@ -152,7 +162,7 @@ export default function SewingPage() {
             <select
               id="op-type"
               value={operationType}
-              onChange={(e) => setOperationType(e.target.value)}
+              onChange={(e) => setOperationType(e.target.value as OperationType)}
               className={`${BASE_INPUT} appearance-none`}
             >
               <option value="SP1">SP1</option>
