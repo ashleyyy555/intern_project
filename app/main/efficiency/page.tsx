@@ -85,7 +85,8 @@ export default function EfficiencyPage() {
     }
   };
 
-  const targetKeysToRender = processType === "100% Inspection" ? TARGET_KEYS : ["M1"];
+      const targetKeysToRender: MetricKey[] =
+        processType === "100% Inspection" ? TARGET_KEYS : (["M1"] as MetricKey[]);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -147,7 +148,7 @@ export default function EfficiencyPage() {
             {targetKeysToRender.map(key => (
               <div key={key} className="space-y-1">
                 <label htmlFor={key} className="block text-xs font-medium text-gray-500 text-center">
-                  {key === "M1" && processType === "100% Inspection" ? "Top/Bottom Panel" : METRICS[key].label}
+                {key === "M1" && processType === "100% Inspection" ? "Top/Bottom Panel" : METRICS[key].label}
                 </label>
                 <input
                   id={key}
