@@ -8,6 +8,7 @@ function klDayKey(d: Date) {
   });
   return fmt.format(d); // YYYY-MM-DD
 }
+
 function yearMonthKey(d: Date) {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kuala_Lumpur",
@@ -64,7 +65,7 @@ function sumRowAllMachinesRaw(row: SewingRow) {
 }
 
 /** Map<dateKey, Map<machineCol, number>> initialized lazily */
-function ensureNested<T extends object, K1 extends string, K2 extends string>(
+function ensureNested<K1 extends string, K2 extends string>(
   obj: Record<K1, Record<K2, number>>,
   k1: K1,
   k2: K2,
@@ -85,7 +86,7 @@ async function fetchSewingRows(start?: Date, end?: Date) {
 }
 
 /* -----------------------------------------------------------
- * STEP 1 + 2: After multiplying, sum by machine (daily)
+ * STEP 1 + 2 (existing): After multiplying, sum by machine (daily)
  * - For each date, for each machine column, sum(value * multiplier(opType))
  * ----------------------------------------------------------- */
 export async function getWeightedDailyTotalsByMachine(params?: {
@@ -112,7 +113,7 @@ export async function getWeightedDailyTotalsByMachine(params?: {
 }
 
 /* -----------------------------------------------------------
- * STEP 3: Daily total of ALL machines GROUPED BY operationType (raw, no multiplier)
+ * STEP 3 (existing): Daily total of ALL machines GROUPED BY operationType (raw, no multiplier)
  * - For each date, for each operationType, sum(all machine columns)
  * ----------------------------------------------------------- */
 export async function getDailyTotalsByOperationTypeRaw(params?: {
@@ -131,7 +132,7 @@ export async function getDailyTotalsByOperationTypeRaw(params?: {
 }
 
 /* -----------------------------------------------------------
- * STEP 4: Monthly total of ALL machines GROUPED BY operationType (raw)
+ * STEP 4 (existing): Monthly total of ALL machines GROUPED BY operationType (raw)
  * - Sum of STEP 3 across the month (you can also compute directly)
  * ----------------------------------------------------------- */
 export async function getMonthlyTotalsByOperationTypeRaw(params?: {
@@ -150,19 +151,99 @@ export async function getMonthlyTotalsByOperationTypeRaw(params?: {
 }
 
 /* -----------------------------------------------------------
- * Convenience aggregator if you want everything in one call
+ * STEP 5 (NEW): Daily weighted total by operation type
+ * - Multiply each operation type's raw daily total by its multiplier
+ * Output: Record<dateKey, Record<operationType, number>>
+ * ----------------------------------------------------------- */
+export async function getDailyWeightedTotalsByOperationType(params?: {
+  start?: Date; end?: Date;
+}) {
+  const dailyRaw = await getDailyTotalsByOperationTypeRaw(params);
+
+  const result: Record<string, Record<string, number>> = {};
+
+  for (const [dateKey, opMap] of Object.entries(dailyRaw)) {
+    result[dateKey] = {};
+    for (const [opType, val] of Object.entries(opMap)) {
+      const multiplier = SEWING_MULTIPLIER[(opType as SewingOpType)] ?? 1;
+      result[dateKey][opType] = val * multiplier;
+    }
+  }
+
+  return result;
+}
+
+/* -----------------------------------------------------------
+ * STEP 6 (NEW): Monthly weighted total by operation type
+ * - Sum all weighted daily totals (from Step 5) across the month
+ * Output: Record<YYYY-MM, Record<operationType, number>>
+ * ----------------------------------------------------------- */
+export async function getMonthlyWeightedTotalsByOperationType(params?: {
+  start?: Date; end?: Date;
+}) {
+  const dailyWeighted = await getDailyWeightedTotalsByOperationType(params);
+  const result: Record<string, Record<string, number>> = {};
+
+  for (const [dateKey, opMap] of Object.entries(dailyWeighted)) {
+    // dateKey is YYYY-MM-DD —> bucket by YYYY-MM
+    const [y, m] = dateKey.split("-");
+    const ym = `${y}-${m}`;
+    if (!result[ym]) result[ym] = {};
+
+    for (const [opType, val] of Object.entries(opMap)) {
+      if (result[ym][opType] == null) result[ym][opType] = 0;
+      result[ym][opType] += val;
+    }
+  }
+
+  return result;
+}
+
+/* -----------------------------------------------------------
+ * STEP 7 (NEW): Monthly grand total (sum of all opTypes’ monthly weighted totals)
+ * Output: Record<YYYY-MM, number>
+ * ----------------------------------------------------------- */
+export async function getMonthlyGrandTotalWeighted(params?: {
+  start?: Date; end?: Date;
+}) {
+  const monthlyWeighted = await getMonthlyWeightedTotalsByOperationType(params);
+  const result: Record<string, number> = {};
+
+  for (const [ym, opMap] of Object.entries(monthlyWeighted)) {
+    let sum = 0;
+    for (const val of Object.values(opMap)) sum += val;
+    result[ym] = sum;
+  }
+
+  return result;
+}
+
+/* -----------------------------------------------------------
+ * Convenience aggregator — now includes the new steps (5–7)
  * ----------------------------------------------------------- */
 export async function getSewingReports(params?: { start?: Date; end?: Date }) {
-  const [weightedDailyByMachine, dailyByOpTypeRaw, monthlyByOpTypeRaw] =
-    await Promise.all([
-      getWeightedDailyTotalsByMachine(params),
-      getDailyTotalsByOperationTypeRaw(params),
-      getMonthlyTotalsByOperationTypeRaw(params),
-    ]);
+  const [
+    weightedDailyByMachine,   // (existing) daily by machine with multiplier
+    dailyByOpTypeRaw,         // (existing) step 3
+    monthlyByOpTypeRaw,       // (existing) step 4
+    dailyWeightedByOpType,    // (new)    step 5
+    monthlyWeightedByOpType,  // (new)    step 6
+    monthlyGrandWeighted,     // (new)    step 7
+  ] = await Promise.all([
+    getWeightedDailyTotalsByMachine(params),
+    getDailyTotalsByOperationTypeRaw(params),
+    getMonthlyTotalsByOperationTypeRaw(params),
+    getDailyWeightedTotalsByOperationType(params),
+    getMonthlyWeightedTotalsByOperationType(params),
+    getMonthlyGrandTotalWeighted(params),
+  ]);
 
   return {
-    weightedDailyByMachine,   // step 1+2
-    dailyByOpTypeRaw,         // step 3
-    monthlyByOpTypeRaw,       // step 4
+    weightedDailyByMachine,
+    dailyByOpTypeRaw,
+    monthlyByOpTypeRaw,
+    dailyWeightedByOpType,
+    monthlyWeightedByOpType,
+    monthlyGrandWeighted,
   };
 }
