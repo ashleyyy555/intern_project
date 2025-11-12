@@ -58,19 +58,19 @@ export async function GET(req: Request) {
     const sumField = (arr: any[], field: string) => arr.reduce((sum, row) => sum + (row[field] || 0), 0);
 
     // Total actual outputs
-const totalActualSewingOutput = Object.values(sewingReports.monthlyByOpTypeRaw).reduce(
+const totalActualSewingOutput = Object.values(sewingReports.monthlyWeightedByOpType).reduce(
   (monthSum, opTypeTotals) => 
     monthSum + Object.values(opTypeTotals).reduce((sum, val) => sum + val, 0),
   0
 );
 
-    // ✅ use grand total from inspection dashboard
+    // use grand total from inspection dashboard
     const totalActualInspectionOutput = inspectionDashboard.monthly.grand.reduce((sum, row) => sum + (row.total || 0), 0);
 
 const responseData = {
   sewing: {
     ratedOutput: sumField(sewingEfficiency.monthly, 'ratedOutput'),
-    actualOutput: totalActualSewingOutput, // ✅ replaced with date-range total
+    actualOutput: totalActualSewingOutput, // replaced with date-range total
     ratedOperatingTimeMins: sumField(sewingUtilization.monthly, 'ratedOperatingTimeMins'),
     actualOperatingTimeMins: sumField(sewingUtilization.monthly, 'operatingTimeMins'),
   },

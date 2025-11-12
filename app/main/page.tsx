@@ -23,7 +23,6 @@ const formatDisplayDate = (isoDateStr: string) => {
   return `${year}/${month}/${day}`;
 };
 
-
 // --- API Fetch Functions ---
 const fetchCuttingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
@@ -49,6 +48,7 @@ const fetchSewingReport = async (startDateObj: Date, endDateObj: Date) => {
   const startDateISO = getISODate(startDateObj);
   const endDateISO = getISODate(endDateObj);
 
+  // NOTE: Assuming /api/sewing routes to your sewing-report logic.
   const response = await fetch("/api/sewing", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -106,7 +106,7 @@ const fetchPackingReport = async (startDateObj: Date, endDateObj: Date) => {
 };
 
 // --------------------------------------------------------------------------------
-// --- Table Component: CUTTING (Updated to show all panelIDs, including zero totals) ---
+// --- Table Component: CUTTING (show all panelIDs incl. zero) ---
 // --------------------------------------------------------------------------------
 const ALL_PANEL_IDS = ["Circular Fabric", "Heavy Duty Fabric", "Light Duty Fabric", "Type 110", "Type 148"]; // Example list
 
@@ -117,7 +117,7 @@ function CuttingTotalTable({ data }: { data: any }) {
     const idLabel = p.panelId;
     acc[idLabel] = (acc[idLabel] || 0) + p.pcs;
     return acc;
-  }, {});
+  }, {} as Record<string, number>);
 
   const finalPanelsByID = ALL_PANEL_IDS.reduce((acc: Record<string, number>, panelId) => {
     acc[panelId] = panelsByIDFromData[panelId] || 0;
@@ -187,7 +187,7 @@ function CuttingTotalTable({ data }: { data: any }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Table Component: SEWING (Updated to show 0 totals) ---
+// --- Table Component: SEWING (Weighted totals) ---
 // --------------------------------------------------------------------------------
 function SewingTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
@@ -196,8 +196,9 @@ function SewingTotalTable({ dailyData }: { dailyData: any }) {
   const totalsByOpTypeFromData: Record<string, number> = {};
   let overallGrandTotal = 0;
 
-  if (dailyData?.dailyByOpTypeRaw) {
-    Object.values(dailyData.dailyByOpTypeRaw).forEach((dateData: any) => {
+  // Use weighted totals from your new API shape
+  if (dailyData?.dailyWeightedByOpType) {
+    Object.values(dailyData.dailyWeightedByOpType).forEach((dateData: any) => {
       Object.entries(dateData as Record<string, number>).forEach(([op, total]) => {
         if (OP_TYPES.includes(op) && typeof total === "number") {
           totalsByOpTypeFromData[op] = (totalsByOpTypeFromData[op] || 0) + total;
@@ -215,7 +216,7 @@ function SewingTotalTable({ dailyData }: { dailyData: any }) {
   return (
     <>
       <h2 className="text-xl font-bold text-blue-600 mb-4 flex items-center">
-        Total {TITLE} by Operation Type
+        Total {TITLE} by Operation Type (Weighted)
       </h2>
       <div className="overflow-x-auto shadow-md rounded-lg border border-gray-100">
         <table className="min-w-full divide-y divide-gray-200">
@@ -225,7 +226,7 @@ function SewingTotalTable({ dailyData }: { dailyData: any }) {
                 Operation Type
               </th>
               <th className="px-6 py-3 text-right text-xs font-bold text-blue-700 uppercase tracking-wider">
-                Total Sewing (Raw)
+                Total Sewing (Weighted)
               </th>
               <th className="px-6 py-3 text-right text-xs font-extrabold text-white uppercase tracking-wider bg-blue-700 w-1/4">
                 OVERALL TOTAL
@@ -260,7 +261,7 @@ function SewingTotalTable({ dailyData }: { dailyData: any }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Table Component: INSPECTION (Updated to show 0 totals) ---
+// --- Table Component: INSPECTION (0-friendly) ---
 // --------------------------------------------------------------------------------
 function InspectionTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["IH", "S", "OS", "B"];
@@ -334,7 +335,7 @@ function InspectionTotalTable({ dailyData }: { dailyData: any }) {
 }
 
 // --------------------------------------------------------------------------------
-// --- Table Component: PACKING (Updated to show 0 totals) ---
+// --- Table Component: PACKING (0-friendly) ---
 // --------------------------------------------------------------------------------
 function PackingTotalTable({ dailyData }: { dailyData: any }) {
   const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
@@ -481,20 +482,18 @@ export default function DashboardPage() {
     }
   };
 
-  // Export a single "Summary" sheet: columns = [Section, Item, Total]
-  // - No "Type" column
-  // - Merge the "Section" column for each section block
+  // Export: one "Summary" sheet [Section, Item, Total], merged Section column
   const handleExportClick = async () => {
     const safeNum = (v: any) => (typeof v === "number" && isFinite(v) ? v : 0);
-  
+
     try {
       setIsExporting(true);
       setMessage("Preparing data for export...");
-    
+
       // Build a unified array of rows in the order: Cutting, Sewing, Inspection, Packing
       type Row = { section: string; item: string; total: number; isGrand?: boolean };
       const rows: Row[] = [];
-    
+
       // -------- CUTTING (Section=Cutting, Item=Panel ID) --------
       {
         const section = "Cutting";
@@ -504,27 +503,28 @@ export default function DashboardPage() {
           const id = String(p.panelId ?? "");
           agg[id] = (agg[id] ?? 0) + safeNum(p.pcs);
         });
-      
+
         // If you want zero rows for known panel IDs, uncomment:
         // ALL_PANEL_IDS.forEach(id => { agg[id] = agg[id] ?? 0; });
-      
+
         Object.entries(agg).forEach(([panelId, total]) => {
           rows.push({ section, item: panelId, total });
         });
-      
+
         const grand = panels.reduce((a: number, p: any) => a + safeNum(p.pcs), 0);
         rows.push({ section, item: "GRAND TOTAL", total: grand, isGrand: true });
       }
-    
+
       // -------- SEWING (Section=Sewing, Item=Operation Type) --------
+      // Use weighted totals from dailyWeightedByOpType
       {
         const section = "Sewing";
         const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
-        const raw = sewingReportData?.dailyByOpTypeRaw ?? {};
+        const weighted = sewingReportData?.dailyWeightedByOpType ?? {};
         const totals: Record<string, number> = {};
         let overall = 0;
-      
-        Object.values(raw).forEach((dateData: any) => {
+
+        Object.values(weighted).forEach((dateData: any) => {
           Object.entries(dateData as Record<string, number>).forEach(([op, t]) => {
             if (OP_TYPES.includes(op)) {
               const n = safeNum(t);
@@ -533,14 +533,15 @@ export default function DashboardPage() {
             }
           });
         });
-      
+
         // include all OP_TYPES even if zero
         OP_TYPES.forEach(op => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
-        rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
+
+        rows.push({ section, item: "GRAND TOTAL (Weighted)", total: overall, isGrand: true });
       }
-    
+
       // -------- INSPECTION (Section=Inspection, Item=Operation Type) --------
       {
         const section = "Inspection";
@@ -548,7 +549,7 @@ export default function DashboardPage() {
         const arr = inspectionReportData?.daily?.byOpType ?? [];
         const totals: Record<string, number> = {};
         let overall = 0;
-      
+
         arr.forEach((r: any) => {
           if (OP_TYPES.includes(r.opType)) {
             const n = safeNum(r.total);
@@ -556,13 +557,13 @@ export default function DashboardPage() {
             overall += n;
           }
         });
-      
+
         OP_TYPES.forEach(op => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
         rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
       }
-    
+
       // -------- PACKING (Section=Packing, Item=Operation Type) --------
       {
         const section = "Packing";
@@ -570,7 +571,7 @@ export default function DashboardPage() {
         const arr = packingReportData?.daily?.byOpType ?? [];
         const totals: Record<string, number> = {};
         let overall = 0;
-      
+
         arr.forEach((r: any) => {
           if (OP_TYPES.includes(r.opType)) {
             const n = safeNum(r.total);
@@ -578,41 +579,38 @@ export default function DashboardPage() {
             overall += n;
           }
         });
-      
+
         OP_TYPES.forEach(op => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
         rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
       }
-    
+
       // ================= Build Excel (ONE sheet) =================
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Summary");
-    
+
       // Header row (no Type column)
       const header = ["Section", "Item", "Total"];
       ws.addRow(header);
-    
+
       // Track start/end row numbers for each contiguous section block (for merging)
       type Block = { section: string; start: number; end: number };
       const blocks: Block[] = [];
-    
+
       let currentBlock: Block | null = null;
-      const headerRowNumber = 1;
-      let currentRowNumber = headerRowNumber;
-    
+
       // Add data rows, noting block boundaries
-      rows.forEach((r, idx) => {
-        // Each addRow increments row count; determine new row number first:
+      rows.forEach((r) => {
         const rowNum = ws.rowCount + 1; // next row index
         ws.addRow([r.section, r.item, r.total]);
-      
+
         // Bold GRAND TOTAL lines
         if (r.isGrand) {
           ws.getRow(rowNum).font = { bold: true };
         }
-      
-        // Manage blocks
+
+        // Manage contiguous blocks for Section merge
         if (!currentBlock) {
           currentBlock = { section: r.section, start: rowNum, end: rowNum };
         } else if (currentBlock.section === r.section) {
@@ -621,17 +619,16 @@ export default function DashboardPage() {
           blocks.push(currentBlock);
           currentBlock = { section: r.section, start: rowNum, end: rowNum };
         }
-        currentRowNumber = rowNum;
       });
       if (currentBlock) blocks.push(currentBlock);
-    
+
       // Column widths
       ws.columns = [
         { width: 16 }, // Section
         { width: 30 }, // Item
         { width: 14 }, // Total
       ];
-    
+
       // Header styling
       const headerRow = ws.getRow(1);
       headerRow.font = { bold: true };
@@ -641,8 +638,8 @@ export default function DashboardPage() {
         pattern: "solid",
         fgColor: { argb: "FFDFEBFF" }, // light blue
       };
-    
-      // Merge Section column for each contiguous block and clear repeated labels
+
+      // Merge Section column for each contiguous block
       blocks.forEach(({ section, start, end }) => {
         if (start < end) {
           ws.mergeCells(start, 1, end, 1); // merge col 1 (Section) from start..end
@@ -650,13 +647,13 @@ export default function DashboardPage() {
           topCell.value = section;
           topCell.alignment = { vertical: "middle", horizontal: "center" };
         } else {
-          // single row block: just keep the value as-is
+          // single row block
           const cell = ws.getCell(start, 1);
           cell.value = section;
           cell.alignment = { vertical: "middle", horizontal: "center" };
         }
       });
-    
+
       // Borders + number format
       const setThinBorder = (cell: ExcelJS.Cell) => {
         cell.border = {
@@ -670,7 +667,7 @@ export default function DashboardPage() {
         row.eachCell((cell) => setThinBorder(cell));
         if (r > 1) row.getCell(3).numFmt = "#,##0"; // Total column
       });
-    
+
       // Download
       const buf = await wb.xlsx.writeBuffer();
       const blob = new Blob([buf], {
@@ -683,7 +680,7 @@ export default function DashboardPage() {
       a.download = fname;
       a.click();
       URL.revokeObjectURL(url);
-    
+
       setMessage("Export complete!");
     } catch (err: any) {
       console.error(err);
@@ -693,8 +690,6 @@ export default function DashboardPage() {
       setTimeout(() => setMessage(""), 3000);
     }
   };
-
-
 
   const loadingPlaceholder = (
     <div className="mt-8 text-center text-gray-300 border-2 border-dashed border-gray-300 p-12 rounded-lg h-56 flex items-center justify-center">
@@ -712,70 +707,69 @@ export default function DashboardPage() {
         {/* Date Range Filter */}
         <div className="bg-white p-6 rounded-xl shadow-xl border border-indigo-100">
           <div className="flex flex-col md:flex-row md:items-end justify-between space-y-4 md:space-y-0 md:space-x-6">
- {/* --- START DATE --- */}
-<div className="flex flex-col space-y-1 w-full md:w-auto">
-  <label htmlFor="start-date-picker" className="text-sm font-semibold text-gray-700">
-    Start Date
-  </label>
-  <div className="relative">
-    {/* Hidden real date input */}
-    <input
-      id="start-date-picker"
-      type="date"
-      value={startDate}
-      onChange={(e) => setStartDate(e.target.value)}
-      className="absolute inset-0 opacity-0 cursor-pointer"
-    />
+            {/* --- START DATE --- */}
+            <div className="flex flex-col space-y-1 w-full md:w-auto">
+              <label htmlFor="start-date-picker" className="text-sm font-semibold text-gray-700">
+                Start Date
+              </label>
+              <div className="relative">
+                {/* Hidden real date input */}
+                <input
+                  id="start-date-picker"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
 
-    {/* Fake visible display */}
-    <div
-      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
-                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
-                 text-center font-medium select-none"
-      onClick={() => {
-        // Open the hidden date picker
-        const realInput = document.getElementById("start-date-picker") as HTMLInputElement | null;
-        if (realInput) realInput.showPicker?.();
-      }}
-    >
-      {formatDisplayDate(startDate)}
-    </div>
-  </div>
-</div>
+                {/* Fake visible display */}
+                <div
+                  className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                             focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                             text-center font-medium select-none"
+                  onClick={() => {
+                    // Open the hidden date picker
+                    const realInput = document.getElementById("start-date-picker") as HTMLInputElement | null;
+                    if (realInput) realInput.showPicker?.();
+                  }}
+                >
+                  {formatDisplayDate(startDate)}
+                </div>
+              </div>
+            </div>
 
-{/* --- END DATE --- */}
-<div className="flex flex-col space-y-1 w-full md:w-auto">
-  <label htmlFor="end-date-picker" className="text-sm font-semibold text-gray-700">
-    End Date
-  </label>
-  <div className="relative">
-    {/* Hidden real date input */}
-    <input
-      id="end-date-picker"
-      type="date"
-      value={endDate}
-      onChange={(e) => setEndDate(e.target.value)}
-      className="absolute inset-0 opacity-0 cursor-pointer"
-    />
+            {/* --- END DATE --- */}
+            <div className="flex flex-col space-y-1 w-full md:w-auto">
+              <label htmlFor="end-date-picker" className="text-sm font-semibold text-gray-700">
+                End Date
+              </label>
+              <div className="relative">
+                {/* Hidden real date input */}
+                <input
+                  id="end-date-picker"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
 
-    {/* Fake visible display */}
-    <div
-      className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
-                 focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
-                 text-center font-medium select-none"
-      onClick={() => {
-        // Open the hidden date picker
-        const realInput = document.getElementById("end-date-picker") as HTMLInputElement | null;
-        if (realInput) realInput.showPicker?.();
-      }}
-    >
-      {formatDisplayDate(endDate)}
-    </div>
-  </div>
-</div>
+                {/* Fake visible display */}
+                <div
+                  className="p-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer
+                             focus-within:ring-2 focus-within:ring-indigo-500 w-full md:w-44 text-gray-800
+                             text-center font-medium select-none"
+                  onClick={() => {
+                    // Open the hidden date picker
+                    const realInput = document.getElementById("end-date-picker") as HTMLInputElement | null;
+                    if (realInput) realInput.showPicker?.();
+                  }}
+                >
+                  {formatDisplayDate(endDate)}
+                </div>
+              </div>
+            </div>
 
-
-            {/* Adjusted Button Group Container */}
+            {/* Buttons */}
             <div className="flex space-x-3 w-full md:w-80 self-end">
               {/* Search Button */}
               <button
@@ -787,7 +781,7 @@ export default function DashboardPage() {
                 {isLoading ? "Searching..." : "Search"}
               </button>
 
-              {/* Export Button (Excel Green) */}
+              {/* Export Button */}
               <button
                 onClick={handleExportClick}
                 disabled={isLoading || isExporting}
@@ -828,7 +822,7 @@ export default function DashboardPage() {
             {isLoading ? loadingPlaceholder : <CuttingTotalTable data={cuttingReportData} />}
           </div>
 
-          {/* 2. SEWING TABLE */}
+          {/* 2. SEWING TABLE (weighted) */}
           <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 min-h-fit">
             {isLoading ? loadingPlaceholder : <SewingTotalTable dailyData={sewingReportData} />}
           </div>
