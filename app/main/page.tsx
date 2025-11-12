@@ -338,7 +338,7 @@ function InspectionTotalTable({ dailyData }: { dailyData: any }) {
 // --- Table Component: PACKING (0-friendly) ---
 // --------------------------------------------------------------------------------
 function PackingTotalTable({ dailyData }: { dailyData: any }) {
-  const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
+  const OP_TYPES = ["In-house", "Semi", "Complete wt 100%", "Complete wo 100%"];
   const TITLE = "Packing";
 
   const totalsByOpTypeFromData = (dailyData?.byOpType || []).reduce(
@@ -567,7 +567,7 @@ export default function DashboardPage() {
       // -------- PACKING (Section=Packing, Item=Operation Type) --------
       {
         const section = "Packing";
-        const OP_TYPES = ["in-house", "semi", "complete wt 100%", "complete wo 100%"];
+        const OP_TYPES = ["In-house", "Semi", "Complete wt 100%", "Complete wo 100%"];
         const arr = packingReportData?.daily?.byOpType ?? [];
         const totals: Record<string, number> = {};
         let overall = 0;
