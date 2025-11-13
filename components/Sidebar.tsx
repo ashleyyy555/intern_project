@@ -28,6 +28,7 @@ const Sidebar = () => {
 
       {/* Bottom Section (Pushed to the bottom) */}
       <ul className="sidebar-section bottom-section">
+        <li className="nav-item register"><a href="/main/register">Register (Admin)</a></li>
         <li className="nav-item signin"><a href="/auth/signin">Sign Out</a></li>
       </ul>
     </nav>

@@ -59,3 +59,14 @@
 .nav-item.signin a:hover {
   background-color: #0056b3;
 }
+
+.nav-item.register a {
+  background-color: #007bff; /* Example: A primary color for the Sign Up button */
+  text-align: center;
+  margin: 10 15px;
+  border-radius: 4px;
+}
+
+.nav-item.register a:hover {
+  background-color: #0056b3;
+}
