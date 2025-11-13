@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { isAborted } from "zod/v3";
 
 
 
@@ -25,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { username },
-          select: { id: true, username: true, passwordHash: true },
+          select: { id: true, username: true, passwordHash: true, isAdmin: true },
         });
 
         console.log("[auth] user found?", !!user, "has hash?", !!user?.passwordHash);
@@ -44,9 +45,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!ok) return null;
 
         // Return the minimal user object for the session
-        return { id: user.id, username: user.username };
+        return { id: user.id, username: user.username, isAdmin: user.isAdmin};
       },
     }),
   ],
   session: { strategy: "jwt" },
+
+  callbacks: {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+        token.username = user.username;
+        token.isAdmin = user.isAdmin;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (token) {
+        session.user = {
+          id: token.id,
+          username: token.username,
+          isAdmin: token.isAdmin,
+        };
+      }
+      return session;
+    },
+  },
 });
