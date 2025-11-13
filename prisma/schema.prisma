@@ -54,6 +54,7 @@ model User {
 
   username     String @unique
   passwordHash String @db.Text
+  isAdmin      Boolean @default(false)
 
   accounts Account[]
   sessions Session[]
