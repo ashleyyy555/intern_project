@@ -1,17 +1,13 @@
-"use client";
+"use server";
 
 import { register } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth"; // your NextAuth v5 auth helper
+import { auth } from "@/auth"; // NextAuth v5 server helper
 
-type RegisterPageProps = {
-  searchParams?: { [key: string]: string | string[] | undefined };
-};
-
-export default async function RegisterPage({ searchParams }: RegisterPageProps) {
-  // 🔒 Admin-only check
+export default async function RegisterPage({ searchParams }: any) {
+  // Admin-only check (server-side)
   const session = await auth();
   const currentUserId = session?.user?.id;
 
@@ -44,7 +40,8 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           </div>
         )}
 
-        <form action={(formData: FormData) => register(formData)} className="mt-6 space-y-4">
+        {/* Server action */}
+        <form action={register} className="mt-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Username</label>
             <input
