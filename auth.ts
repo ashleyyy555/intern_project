@@ -1,14 +1,35 @@
-// auth.ts
 export const runtime = "nodejs";
+
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { isAborted } from "zod/v3";
 
+/**
+ * --- TypeScript augmentation ---
+ * This tells TypeScript that `user` and JWT `token` include `isAdmin`.
+ */
+declare module "next-auth" {
+  interface User {
+    id: string;
+    username: string;
+    isAdmin: boolean;
+  }
 
+  interface Session {
+    user: User;
+  }
 
+  interface JWT {
+    id: string;
+    username: string;
+    isAdmin: boolean;
+  }
+}
+
+/**
+ * --- NextAuth setup ---
+ */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   providers: [
@@ -33,42 +54,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.passwordHash) return null;
 
-        // --- DEBUGGING CHECK: Ensure the hash is retrieved fully ---
-        // A standard bcrypt hash is around 60 characters long.
-        console.log(`[auth] Retrieved hash length: ${user.passwordHash.length}`);
-        // ------------------------------------------------------------
-
         const ok = await bcrypt.compare(password, user.passwordHash);
-        
         console.log("[auth] password match?", ok);
 
         if (!ok) return null;
 
-        // Return the minimal user object for the session
-        return { id: user.id, username: user.username, isAdmin: user.isAdmin};
+        // Return full user object including isAdmin
+        return { id: user.id, username: user.username, isAdmin: user.isAdmin };
       },
     }),
   ],
   session: { strategy: "jwt" },
+  
+callbacks: {
+  jwt: async ({ token, user }) => {
+    if (user) {
+      // Type assertion for token
+      const t = token as {
+        id?: string;
+        username?: string;
+        isAdmin?: boolean;
+        [key: string]: any;
+      };
 
-  callbacks: {
-    jwt: async ({ token, user }) => {
-      if (user) {
-        token.id = user.id;
-        token.username = user.username;
-        token.isAdmin = user.isAdmin;
-      }
-      return token;
-    },
-    session: async ({ session, token }) => {
-      if (token) {
-        session.user = {
-          id: token.id,
-          username: token.username,
-          isAdmin: token.isAdmin,
-        };
-      }
-      return session;
-    },
+      t.id = (user as any).id;
+      t.username = (user as any).username;
+      t.isAdmin = (user as any).isAdmin;
+      return t;
+    }
+    return token;
   },
+  session: async ({ session, token }) => {
+    // Type assertion for token
+    const t = token as {
+      id?: string;
+      username?: string;
+      isAdmin?: boolean;
+      [key: string]: any;
+    };
+
+    if (session.user) {
+      session.user.id = t.id as string;
+      session.user.username = t.username as string;
+      session.user.isAdmin = t.isAdmin as boolean;
+    }
+    return session;
+  },
+},
+
 });
