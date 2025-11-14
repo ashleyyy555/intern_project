@@ -86,16 +86,6 @@ export default async function SignInPage({
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          No account?{" "}
-          <Link
-            href={`/register${prefill ? `?username=${encodeURIComponent(prefill)}` : ""}`}
-            className="text-indigo-600 hover:text-indigo-500"
-          >
-            Create one
-          </Link>
-        </div>
-
         <div className="mt-2 text-center text-sm text-gray-500">
           By signing in, you agree to our{" "}
           <a href="#" className="text-indigo-600 hover:text-indigo-500">
