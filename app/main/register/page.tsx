@@ -4,10 +4,10 @@ import { register } from "@/lib/auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth"; // NextAuth v5 server helper
+import { auth } from "@/auth";
 
 export default async function RegisterPage({ searchParams }: any) {
-  // Admin-only check (server-side)
+  // 🔒 Admin-only check
   const session = await auth();
   const currentUserId = session?.user?.id;
 
@@ -21,17 +21,12 @@ export default async function RegisterPage({ searchParams }: any) {
 
   const error = searchParams?.error ? String(searchParams.error) : undefined;
   const prefill = searchParams?.username ? String(searchParams.username) : "";
-  const fromSignin = searchParams?.from === "signin";
 
   return (
     <div className="min-h-[calc(100vh-10rem)] flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg mx-4">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Create an account</h2>
-          <p className="text-gray-600">
-            {fromSignin ? "We couldn't find your account. " : ""}
-            Register to get started.
-          </p>
         </div>
 
         {error && (
@@ -67,6 +62,19 @@ export default async function RegisterPage({ searchParams }: any) {
             />
           </div>
 
+          {/* ✅ Admin checkbox */}
+          <div className="flex items-center gap-2 mt-2">
+            <input
+              type="checkbox"
+              id="isAdmin"
+              name="isAdmin"
+              className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+            />
+            <label htmlFor="isAdmin" className="text-sm text-gray-700">
+              Make this user an admin
+            </label>
+          </div>
+
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
@@ -74,16 +82,6 @@ export default async function RegisterPage({ searchParams }: any) {
             Create account
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{" "}
-          <Link
-            href={`/auth/signin${prefill ? `?identifier=${encodeURIComponent(prefill)}` : ""}`}
-            className="text-indigo-600 hover:text-indigo-500"
-          >
-            Sign in
-          </Link>
-        </div>
       </div>
     </div>
   );
