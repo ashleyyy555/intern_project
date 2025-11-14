@@ -16,7 +16,11 @@ export async function login(formData: FormData) {
   const callbackUrl = String(formData.get("callbackUrl") || "/dashboard");
 
   if (!username || !password) {
-    redirect(`/auth/signin?error=Missing+credentials&username=${encodeURIComponent(username)}`);
+    redirect(
+      `/auth/signin?error=Missing+credentials&username=${encodeURIComponent(
+        username
+      )}`
+    );
   }
 
   const exists = await prisma.user.findUnique({
@@ -36,7 +40,11 @@ export async function login(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect(`/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(username)}`);
+      redirect(
+        `/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(
+          username
+        )}`
+      );
     }
     throw error;
   }
@@ -47,33 +55,41 @@ export async function login(formData: FormData) {
  * Only admins can register new users
  */
 export async function register(formData: FormData) {
-  // Get current logged-in user via NextAuth v5
+  // Current logged-in user
   const session = await auth();
   const currentUserId = session?.user?.id;
 
   if (!currentUserId) {
-    // Not logged in → redirect to login
     redirect("/auth/signin?error=Admin+access+required");
   }
 
-  // Fetch user from database
-  const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } });
+  // Fetch current user
+  const currentUser = await prisma.user.findUnique({
+    where: { id: currentUserId },
+  });
 
-  // Only admins can proceed
+  // Only admins can register new users
   if (!currentUser?.isAdmin) {
     redirect("/auth/signin?error=Admin+access+required");
   }
 
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
+  const isAdmin = formData.get("isAdmin") === "on"; // ✅ Checkbox support
 
   if (!username || !password) {
-    redirect(`/register?error=Missing+fields&username=${encodeURIComponent(username)}`);
+    redirect(
+      `/register?error=Missing+fields&username=${encodeURIComponent(username)}`
+    );
   }
 
   const exists = await prisma.user.findUnique({ where: { username } });
   if (exists) {
-    redirect(`/register?error=Username+already+in+use&username=${encodeURIComponent(username)}`);
+    redirect(
+      `/register?error=Username+already+in+use&username=${encodeURIComponent(
+        username
+      )}`
+    );
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -82,11 +98,13 @@ export async function register(formData: FormData) {
     data: {
       username,
       passwordHash,
-      isAdmin: false, // new users are normal by default
+      isAdmin, // ✅ Use the checkbox value
     },
   });
 
-  redirect(`/auth/signin?registered=1&username=${encodeURIComponent(username)}`);
+  redirect(
+    `/auth/signin?registered=1&username=${encodeURIComponent(username)}`
+  );
 }
 
 /**
