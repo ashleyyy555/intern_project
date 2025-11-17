@@ -485,15 +485,15 @@ export default function DashboardPage() {
   // Export: one "Summary" sheet [Section, Item, Total], merged Section column
   const handleExportClick = async () => {
     const safeNum = (v: any) => (typeof v === "number" && isFinite(v) ? v : 0);
-
+  
     try {
       setIsExporting(true);
       setMessage("Preparing data for export...");
-
+  
       // Build a unified array of rows in the order: Cutting, Sewing, Inspection, Packing
       type Row = { section: string; item: string; total: number; isGrand?: boolean };
       const rows: Row[] = [];
-
+  
       // -------- CUTTING (Section=Cutting, Item=Panel ID) --------
       {
         const section = "Cutting";
@@ -503,27 +503,23 @@ export default function DashboardPage() {
           const id = String(p.panelId ?? "");
           agg[id] = (agg[id] ?? 0) + safeNum(p.pcs);
         });
-
-        // If you want zero rows for known panel IDs, uncomment:
-        // ALL_PANEL_IDS.forEach(id => { agg[id] = agg[id] ?? 0; });
-
+  
         Object.entries(agg).forEach(([panelId, total]) => {
           rows.push({ section, item: panelId, total });
         });
-
+  
         const grand = panels.reduce((a: number, p: any) => a + safeNum(p.pcs), 0);
         rows.push({ section, item: "GRAND TOTAL", total: grand, isGrand: true });
       }
-
+  
       // -------- SEWING (Section=Sewing, Item=Operation Type) --------
-      // Use weighted totals from dailyWeightedByOpType
       {
         const section = "Sewing";
         const OP_TYPES = ["SP1", "SP2", "PC", "SB", "SPP", "SS", "SSP", "SD", "ST"];
         const weighted = sewingReportData?.dailyWeightedByOpType ?? {};
         const totals: Record<string, number> = {};
         let overall = 0;
-
+  
         Object.values(weighted).forEach((dateData: any) => {
           Object.entries(dateData as Record<string, number>).forEach(([op, t]) => {
             if (OP_TYPES.includes(op)) {
@@ -533,15 +529,14 @@ export default function DashboardPage() {
             }
           });
         });
-
-        // include all OP_TYPES even if zero
-        OP_TYPES.forEach(op => {
+  
+        OP_TYPES.forEach((op) => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
-
+  
         rows.push({ section, item: "GRAND TOTAL (Weighted)", total: overall, isGrand: true });
       }
-
+  
       // -------- INSPECTION (Section=Inspection, Item=Operation Type) --------
       {
         const section = "Inspection";
@@ -549,7 +544,7 @@ export default function DashboardPage() {
         const arr = inspectionReportData?.daily?.byOpType ?? [];
         const totals: Record<string, number> = {};
         let overall = 0;
-
+  
         arr.forEach((r: any) => {
           if (OP_TYPES.includes(r.opType)) {
             const n = safeNum(r.total);
@@ -557,13 +552,13 @@ export default function DashboardPage() {
             overall += n;
           }
         });
-
-        OP_TYPES.forEach(op => {
+  
+        OP_TYPES.forEach((op) => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
         rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
       }
-
+  
       // -------- PACKING (Section=Packing, Item=Operation Type) --------
       {
         const section = "Packing";
@@ -571,7 +566,7 @@ export default function DashboardPage() {
         const arr = packingReportData?.daily?.byOpType ?? [];
         const totals: Record<string, number> = {};
         let overall = 0;
-
+  
         arr.forEach((r: any) => {
           if (OP_TYPES.includes(r.opType)) {
             const n = safeNum(r.total);
@@ -579,37 +574,44 @@ export default function DashboardPage() {
             overall += n;
           }
         });
-
-        OP_TYPES.forEach(op => {
+  
+        OP_TYPES.forEach((op) => {
           rows.push({ section, item: op, total: safeNum(totals[op]) });
         });
         rows.push({ section, item: "GRAND TOTAL", total: overall, isGrand: true });
       }
-
+  
       // ================= Build Excel (ONE sheet) =================
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Summary");
-
+  
+      // --- Title row above the table ---
+      const titleText = `Production Summary (${lastAppliedRange.start} to ${lastAppliedRange.end})`;
+      const titleRow = ws.addRow([titleText]);
+      ws.mergeCells(1, 1, 1, 3); // merge A1:C1
+      titleRow.font = { bold: true, size: 14 };
+      titleRow.alignment = { vertical: "middle", horizontal: "center" };
+  
       // Header row (no Type column)
       const header = ["Section", "Item", "Total"];
-      ws.addRow(header);
-
+      const headerRow = ws.addRow(header); // this is now row 2
+  
       // Track start/end row numbers for each contiguous section block (for merging)
       type Block = { section: string; start: number; end: number };
       const blocks: Block[] = [];
-
+  
       let currentBlock: Block | null = null;
-
+  
       // Add data rows, noting block boundaries
       rows.forEach((r) => {
         const rowNum = ws.rowCount + 1; // next row index
         ws.addRow([r.section, r.item, r.total]);
-
+  
         // Bold GRAND TOTAL lines
         if (r.isGrand) {
           ws.getRow(rowNum).font = { bold: true };
         }
-
+  
         // Manage contiguous blocks for Section merge
         if (!currentBlock) {
           currentBlock = { section: r.section, start: rowNum, end: rowNum };
@@ -621,24 +623,25 @@ export default function DashboardPage() {
         }
       });
       if (currentBlock) blocks.push(currentBlock);
-
+  
       // Column widths
       ws.columns = [
         { width: 16 }, // Section
         { width: 30 }, // Item
         { width: 14 }, // Total
       ];
-
-      // Header styling
-      const headerRow = ws.getRow(1);
+  
+      // Header styling (only the 3 header cells)
       headerRow.font = { bold: true };
       headerRow.alignment = { vertical: "middle", horizontal: "center" };
-      headerRow.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFDFEBFF" }, // light blue
-      };
-
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFDFEBFF" }, // light blue
+        };
+      });
+  
       // Merge Section column for each contiguous block
       blocks.forEach(({ section, start, end }) => {
         if (start < end) {
@@ -653,21 +656,24 @@ export default function DashboardPage() {
           cell.alignment = { vertical: "middle", horizontal: "center" };
         }
       });
-
+  
       // Borders + number format
       const setThinBorder = (cell: ExcelJS.Cell) => {
         cell.border = {
-          top:    { style: "thin" },
-          left:   { style: "thin" },
+          top: { style: "thin" },
+          left: { style: "thin" },
           bottom: { style: "thin" },
-          right:  { style: "thin" },
+          right: { style: "thin" },
         };
       };
       ws.eachRow((row, r) => {
         row.eachCell((cell) => setThinBorder(cell));
-        if (r > 1) row.getCell(3).numFmt = "#,##0"; // Total column
+        // Apply number format to Total column for data rows (after headerRow)
+        if (r > headerRow.number) {
+          row.getCell(3).numFmt = "#,##0";
+        }
       });
-
+  
       // Download
       const buf = await wb.xlsx.writeBuffer();
       const blob = new Blob([buf], {
@@ -680,7 +686,7 @@ export default function DashboardPage() {
       a.download = fname;
       a.click();
       URL.revokeObjectURL(url);
-
+  
       setMessage("Export complete!");
     } catch (err: any) {
       console.error(err);
@@ -690,7 +696,8 @@ export default function DashboardPage() {
       setTimeout(() => setMessage(""), 3000);
     }
   };
-
+  
+  
   const loadingPlaceholder = (
     <div className="mt-8 text-center text-gray-300 border-2 border-dashed border-gray-300 p-12 rounded-lg h-56 flex items-center justify-center">
       <p className="text-xl text-gray-500">Loading data...</p>
