@@ -60,7 +60,7 @@ export default async function SignInPage({
               name="username"
               defaultValue={prefill}
               className="mt-1 w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="your username"
+              placeholder="Username"
               required
               autoComplete="username"
             />
@@ -85,17 +85,6 @@ export default async function SignInPage({
             Sign in
           </button>
         </form>
-
-        <div className="mt-2 text-center text-sm text-gray-500">
-          By signing in, you agree to our{" "}
-          <a href="#" className="text-indigo-600 hover:text-indigo-500">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="#" className="text-indigo-600 hover:text-indigo-500">
-            Privacy Policy
-          </a>
-        </div>
       </div>
     </div>
   );

@@ -29,7 +29,12 @@ export async function login(formData: FormData) {
   });
 
   if (!exists) {
-    redirect(`/register?username=${encodeURIComponent(username)}&from=signin`);
+    // Redirect back to sign-in with a specific error message
+    redirect(
+      `/auth/signin?error=${encodeURIComponent(
+        "Username does not exist"
+      )}&username=${encodeURIComponent(username)}`
+    );
   }
 
   try {
@@ -41,9 +46,9 @@ export async function login(formData: FormData) {
   } catch (error) {
     if (error instanceof AuthError) {
       redirect(
-        `/auth/signin?error=Invalid+credentials&username=${encodeURIComponent(
-          username
-        )}`
+        `/auth/signin?error=${encodeURIComponent(
+          "Incorrect username or password"
+        )}&username=${encodeURIComponent(username)}`
       );
     }
     throw error;
@@ -75,7 +80,7 @@ export async function register(formData: FormData) {
 
   const username = String(formData.get("username") || "").trim();
   const password = String(formData.get("password") || "");
-  const isAdmin = formData.get("isAdmin") === "on"; // ✅ Checkbox support
+  const isAdmin = formData.get("isAdmin") === "on"; // Checkbox support
 
   if (!username || !password) {
     redirect(
@@ -98,7 +103,7 @@ export async function register(formData: FormData) {
     data: {
       username,
       passwordHash,
-      isAdmin, // ✅ Use the checkbox value
+      isAdmin, // Use the checkbox value
     },
   });
 
